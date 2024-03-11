@@ -8,17 +8,21 @@
 
 /* Begin PBXBuildFile section */
 		348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */; };
-		348197A22B9F6BA6008E5F76 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197A12B9F6BA6008E5F76 /* ContentView.swift */; };
+		348197A22B9F6BA6008E5F76 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197A12B9F6BA6008E5F76 /* CameraPreview.swift */; };
 		348197A42B9F6BA7008E5F76 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 348197A32B9F6BA7008E5F76 /* Assets.xcassets */; };
 		348197A72B9F6BA7008E5F76 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 348197A62B9F6BA7008E5F76 /* Preview Assets.xcassets */; };
+		348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AD2B9F818A008E5F76 /* FrameView.swift */; };
+		348197B02B9F8259008E5F76 /* FrameHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AF2B9F8259008E5F76 /* FrameHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		3481979C2B9F6BA6008E5F76 /* PhotoDex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDexApp.swift; sourceTree = "<group>"; };
-		348197A12B9F6BA6008E5F76 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		348197A12B9F6BA6008E5F76 /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
 		348197A32B9F6BA7008E5F76 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		348197A62B9F6BA7008E5F76 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		348197AD2B9F818A008E5F76 /* FrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameView.swift; sourceTree = "<group>"; };
+		348197AF2B9F8259008E5F76 /* FrameHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,7 +56,9 @@
 			isa = PBXGroup;
 			children = (
 				3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */,
-				348197A12B9F6BA6008E5F76 /* ContentView.swift */,
+				348197A12B9F6BA6008E5F76 /* CameraPreview.swift */,
+				348197AD2B9F818A008E5F76 /* FrameView.swift */,
+				348197AF2B9F8259008E5F76 /* FrameHandler.swift */,
 				348197A32B9F6BA7008E5F76 /* Assets.xcassets */,
 				348197A52B9F6BA7008E5F76 /* Preview Content */,
 			);
@@ -137,7 +143,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				348197A22B9F6BA6008E5F76 /* ContentView.swift in Sources */,
+				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
+				348197A22B9F6BA6008E5F76 /* CameraPreview.swift in Sources */,
+				348197B02B9F8259008E5F76 /* FrameHandler.swift in Sources */,
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -275,13 +283,14 @@
 				DEVELOPMENT_TEAM = KK4TXUS6YX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Photo Dex";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Vreau sa folosesc camera. Ma lasi?";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa folosesc datele din photo library";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -309,13 +318,14 @@
 				DEVELOPMENT_TEAM = KK4TXUS6YX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Photo Dex";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Vreau sa folosesc camera. Ma lasi?";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa folosesc datele din photo library";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
