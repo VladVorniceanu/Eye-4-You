@@ -13,8 +13,9 @@ class FrameHandler: NSObject, ObservableObject {
     @Published var frame: CGImage?
     private var permissionGranted = false
     private let captureSession = AVCaptureSession()
-    private let sessionQueue = DispatchSerialQueue(label: "sessionQueue")
+    private let sessionQueue = DispatchQueue(label: "sessionQueue")
     private let context = CIContext()
+    private var currentCamera: AVCaptureDevice?
     
     override init() {
         super.init()
@@ -30,8 +31,10 @@ class FrameHandler: NSObject, ObservableObject {
     }
     
     func stopCaptureSession() {
-        if captureSession.isRunning {
-            captureSession.stopRunning()
+        sessionQueue.sync {
+            if captureSession.isRunning {
+                captureSession.stopRunning()
+            }
         }
     }
     
@@ -53,30 +56,43 @@ class FrameHandler: NSObject, ObservableObject {
         }
     }
 
-
     func setUpCaptureSession() {
         // Set up the capture session.
         
-        guard permissionGranted else {return}
+        guard permissionGranted else { return }
         
         captureSession.beginConfiguration()
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else { return }
-        guard let videoDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {return}
-        guard captureSession.canAddInput(videoDeviceInput) else {return}
-        
-        captureSession.addInput(videoDeviceInput)
+        switchToCamera(.builtInWideAngleCamera)
         
         let videoOutput = AVCaptureVideoDataOutput()
         videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "sampleBufferQueue"))
+        guard captureSession.canAddOutput(videoOutput) else {
+            print("Cannot add video output to capture session")
+            return
+        }
         captureSession.addOutput(videoOutput)
-        videoOutput.connection(with: .video)?.videoRotationAngle = 90.0
+
         
-        let photoOutput = AVCapturePhotoOutput()
-        guard captureSession.canAddOutput(photoOutput) else { return }
-        captureSession.sessionPreset = .photo
-        captureSession.addOutput(photoOutput)
         captureSession.commitConfiguration()
+        captureSession.startRunning()
     }
+
+    
+    func switchToCamera(_ cameraType: AVCaptureDevice.DeviceType) {
+        sessionQueue.async {
+            self.captureSession.inputs.forEach { input in
+                self.captureSession.removeInput(input)
+            }
+            
+            guard let videoDevice = AVCaptureDevice.default(cameraType, for: .video, position: .back) else { return }
+            guard let videoDeviceInput = try? AVCaptureDeviceInput(device: videoDevice) else {return}
+            guard self.captureSession.canAddInput(videoDeviceInput) else {return}
+            
+            self.captureSession.addInput(videoDeviceInput)
+            self.currentCamera = videoDevice
+        }
+    }
+  
 }
 
 extension FrameHandler: AVCaptureVideoDataOutputSampleBufferDelegate {

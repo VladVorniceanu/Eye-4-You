@@ -10,15 +10,17 @@ import SwiftUI
 struct FrameView: View {
     var image: CGImage?
     private let label = Text("frame")
+    @State private var cameraFrame: CGImage? 
     
     var body: some View{
-        ZStack {
-            if let image = image {
-                Image(image, scale: 2, orientation: .up, label: label)
-            } else {
-                Color.black
-            }
-        }.ignoresSafeArea()
+        if let image = image {
+            Image(image, scale: 1.5, orientation: .right, label: label)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            Color.green
+        }
     }
 }
 

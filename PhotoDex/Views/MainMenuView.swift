@@ -15,7 +15,7 @@ struct MainMenuView: View {
                     .font(.title)
                     .padding(.all)
                 
-                NavigationLink(destination: ContentView()) {
+                NavigationLink(destination: CameraLiveView()) {
                     Text("Start camera")
                         .padding()
                         .background(Color.blue)
