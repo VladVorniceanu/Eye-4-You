@@ -25,6 +25,16 @@ class FrameHandler: NSObject, ObservableObject {
         }
     }
     
+    deinit {
+        self.stopCaptureSession();
+    }
+    
+    func stopCaptureSession() {
+        if captureSession.isRunning {
+            captureSession.stopRunning()
+        }
+    }
+    
     func checkPermission() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
@@ -73,7 +83,8 @@ extension FrameHandler: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let cgImage = imageFromSampleBuffer(sampleBuffer: sampleBuffer) else { return }
         
-        DispatchQueue.main.async { [unowned self] in
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             self.frame = cgImage
         }
     }
