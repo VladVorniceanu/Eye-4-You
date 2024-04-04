@@ -21,9 +21,7 @@ struct MainMenuView: View {
                         .background(Color.blue)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/, style: .continuous))
-                        
                 }
-//                .navigationTitle("Main menu")
             }
         }
     }
