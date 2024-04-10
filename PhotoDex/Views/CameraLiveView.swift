@@ -73,15 +73,16 @@ struct CameraLiveView: View {
                     
                     Spacer()
                     ShutterButton(action: {
-                        // TODO: capture photo
-                        model.captureImage() /*{ capturedImage in
+                        model.captureImage { capturedImage in
                             if let capturedImage = capturedImage {
                                 self.isPhotoTaken.toggle()
-                                self.$model.stopCaptureSession
+                                self.model.cameraManager.stopCapturing()
                                 self.capturedImage = capturedImage
                             }
-                        }*/
+                        }
                     }, size: Int(CGFloat(width * 0.2)))
+                    .sheet(isPresented: $isPhotoTaken, content: {
+                        PhotoPreviewView(image: self.$capturedImage, isPresented: self.$showingPhotoPreview)})
                     
                     Spacer()
                     CameraSwitchButton (action: {

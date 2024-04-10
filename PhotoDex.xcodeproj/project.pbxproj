@@ -11,8 +11,6 @@
 		3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4872BBC2B3C006626CA /* MainMenuView.swift */; };
 		3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4892BBC6088006626CA /* CircleButton.swift */; };
 		3462D4B22BBEC4D5006626CA /* PhotoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B12BBEC4D5006626CA /* PhotoPreviewView.swift */; };
-		3462D4B42BBED38B006626CA /* PhotoCaptureProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B32BBED38B006626CA /* PhotoCaptureProcessor.swift */; };
-		3462D4B62BBEF03D006626CA /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B52BBEF03D006626CA /* CameraView.swift */; };
 		3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B72BBFE590006626CA /* CameraViewModel.swift */; };
 		348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */; };
 		348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */; };
@@ -27,8 +25,6 @@
 		3462D4872BBC2B3C006626CA /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		3462D4892BBC6088006626CA /* CircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleButton.swift; sourceTree = "<group>"; };
 		3462D4B12BBEC4D5006626CA /* PhotoPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPreviewView.swift; sourceTree = "<group>"; };
-		3462D4B32BBED38B006626CA /* PhotoCaptureProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoCaptureProcessor.swift; sourceTree = "<group>"; };
-		3462D4B52BBEF03D006626CA /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
 		3462D4B72BBFE590006626CA /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
 		3481979C2B9F6BA6008E5F76 /* PhotoDex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDexApp.swift; sourceTree = "<group>"; };
@@ -67,8 +63,6 @@
 			children = (
 				348197AF2B9F8259008E5F76 /* CameraManager.swift */,
 				3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */,
-				3462D4B52BBEF03D006626CA /* CameraView.swift */,
-				3462D4B32BBED38B006626CA /* PhotoCaptureProcessor.swift */,
 				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
 			);
 			path = Handler;
@@ -185,9 +179,7 @@
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,
-				3462D4B62BBEF03D006626CA /* CameraView.swift in Sources */,
 				3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */,
-				3462D4B42BBED38B006626CA /* PhotoCaptureProcessor.swift in Sources */,
 				348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */,
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
 				3462D4B22BBEC4D5006626CA /* PhotoPreviewView.swift in Sources */,

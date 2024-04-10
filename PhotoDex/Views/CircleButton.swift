@@ -30,13 +30,13 @@ struct ShutterButton: View {
     var size: Int
     
     var body: some View {
-            Button(action: action) {
-                Image(systemName: "button.programmable")
-                    .font(.system(size: CGFloat(size)))
-                    .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.9, opacity: 1))
-                    .padding(10)
-                    .shadow(radius: 10)
-            }
+        Button(action: action) {
+            Image(systemName: "button.programmable")
+                .font(.system(size: CGFloat(size)))
+                .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.9, opacity: 1))
+                .padding(10)
+                .shadow(radius: 10)
+        }
     }
 }
 
@@ -45,5 +45,5 @@ struct ShutterButton: View {
         CircleButton(action: {}, label: "0.5x", size: 50)
         ShutterButton(action: {}, size: 40)
     }
-   
+    
 }

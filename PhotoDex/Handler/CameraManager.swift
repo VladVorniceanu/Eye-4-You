@@ -45,7 +45,7 @@ class CameraManager: ObservableObject {
             self.startCapturing()
         }
     }
-        
+    
     private func setupVideoInput() {
         print("setup camera manager")
         do {

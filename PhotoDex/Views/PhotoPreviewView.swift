@@ -28,7 +28,7 @@ struct PhotoPreviewView: View {
                     .cornerRadius(10)
                     
                     Button("Accept") {
-                         
+                        
                     }
                     .padding()
                     .foregroundColor(.white)

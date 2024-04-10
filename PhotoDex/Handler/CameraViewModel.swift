@@ -91,7 +91,7 @@ class CameraViewModel : ObservableObject {
         cameraManager.switchCamera()
     }
       
-    func captureImage() {
+    func captureImage(completion: @escaping (CGImage?) -> Void) {
 //        requestGalleryPermission()
         let permission = checkGalleryPermissionStatus()
         if permission.rawValue != 2 {

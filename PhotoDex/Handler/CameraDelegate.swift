@@ -42,6 +42,6 @@ class CameraDelegate: NSObject, AVCapturePhotoCaptureDelegate {
                 print("Error saving image to gallery: \(error)")
             }
         }
-
+        
     }
 }
