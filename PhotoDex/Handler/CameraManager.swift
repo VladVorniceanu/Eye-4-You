@@ -23,7 +23,11 @@ class CameraManager: ObservableObject {
     @Published var status = Status.unconfigured
     @Published var shouldShowAlertView = false
     @Published private var flashMode: AVCaptureDevice.FlashMode = .off
+    @Published var capturedImage: UIImage? = nil
     
+    private var cameraDelegate: CameraDelegate?
+    
+    var position: AVCaptureDevice.Position = .back
     let session = AVCaptureSession()
     let photoOutput = AVCapturePhotoOutput()
     var videoDeviceInput: AVCaptureDeviceInput?
@@ -41,10 +45,9 @@ class CameraManager: ObservableObject {
             self.startCapturing()
         }
     }
-    
-    var position : AVCaptureDevice.Position = .back
-    
+        
     private func setupVideoInput() {
+        print("setup camera manager")
         do {
             let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
             
@@ -58,6 +61,7 @@ class CameraManager: ObservableObject {
             let videoInput = try AVCaptureDeviceInput(device: camera)
             if session.canAddInput(videoInput) {
                 session.addInput(videoInput)
+                videoDeviceInput = videoInput
                 status = .configured
             } else {
                 print("CameraManager: Could not add video device input")
@@ -76,6 +80,8 @@ class CameraManager: ObservableObject {
     private func setupPhotoOutput() {
         if session.canAddOutput(photoOutput) {
             session.addOutput(photoOutput)
+            let supportedMaxPhotoDimensions = self.videoDeviceInput?.device.activeFormat.supportedMaxPhotoDimensions
+            photoOutput.maxPhotoDimensions = (supportedMaxPhotoDimensions?.last)!
             photoOutput.maxPhotoQualityPrioritization = .quality
             status = .configured
         } else {
@@ -127,6 +133,79 @@ class CameraManager: ObservableObject {
             }
         } else {
             print("Torch not available for this device")
+        }
+    }
+    
+    func setFocusOnTap(devicePoint: CGPoint) {
+        print("set focus in manager")
+        guard let cameraDevice = self.videoDeviceInput?.device else { return }
+        sessionQueue.async {
+            do {
+                try cameraDevice.lockForConfiguration()
+                
+                if cameraDevice.isFocusModeSupported(.continuousAutoFocus) && cameraDevice.isFocusPointOfInterestSupported {
+                    cameraDevice.focusPointOfInterest = devicePoint
+                    cameraDevice.focusMode = .autoFocus
+                }
+                
+                if cameraDevice.isExposurePointOfInterestSupported && cameraDevice.isExposureModeSupported(.autoExpose) {
+                    cameraDevice.exposurePointOfInterest = devicePoint
+                    cameraDevice.exposureMode = .autoExpose
+                    
+                }
+                
+                cameraDevice.isSubjectAreaChangeMonitoringEnabled = true
+                cameraDevice.unlockForConfiguration()
+            } catch {
+                print("Failed to configure focus: \(error)")
+            }
+        }
+    }
+    
+    func switchCamera() {
+        print("switch camera manager")
+        guard let videoDeviceInput else { return }
+        print("switch camera manager after guard")
+        // Remove the current video input
+        session.removeInput(videoDeviceInput)
+        
+        // Add the new video input
+        setupVideoInput()
+    }
+    
+    func captureImage() {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            
+            var photoSettings = AVCapturePhotoSettings()
+            
+            if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
+                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+            }
+            
+            if self.videoDeviceInput!.device.isFlashAvailable {
+                photoSettings.flashMode = self.flashMode
+            }
+            
+            photoSettings.maxPhotoDimensions = self.photoOutput.maxPhotoDimensions
+            
+            if let previewPhotoPixelFormatType = photoSettings.availablePreviewPhotoPixelFormatTypes.first {
+                photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: previewPhotoPixelFormatType]
+            }
+            
+            photoSettings.photoQualityPrioritization = self.photoOutput.maxPhotoQualityPrioritization
+            
+            if let videoConnextion = photoOutput.connection(with: .video), videoConnextion.isVideoRotationAngleSupported(90) {
+                videoConnextion.videoRotationAngle = 90
+            }
+            
+            cameraDelegate = CameraDelegate { [weak self] image in
+                self?.capturedImage = image
+            }
+            
+            if let cameraDelegate {
+                self.photoOutput.capturePhoto(with: photoSettings, delegate: cameraDelegate)
+            }
         }
     }
 }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */; };
 		3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4872BBC2B3C006626CA /* MainMenuView.swift */; };
 		3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4892BBC6088006626CA /* CircleButton.swift */; };
 		3462D4B22BBEC4D5006626CA /* PhotoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B12BBEC4D5006626CA /* PhotoPreviewView.swift */; };
@@ -22,6 +23,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDelegate.swift; sourceTree = "<group>"; };
 		3462D4872BBC2B3C006626CA /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		3462D4892BBC6088006626CA /* CircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleButton.swift; sourceTree = "<group>"; };
 		3462D4B12BBEC4D5006626CA /* PhotoPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPreviewView.swift; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				348197AF2B9F8259008E5F76 /* CameraManager.swift */,
+				3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */,
 				3462D4B52BBEF03D006626CA /* CameraView.swift */,
 				3462D4B32BBED38B006626CA /* PhotoCaptureProcessor.swift */,
 				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
@@ -179,6 +182,7 @@
 			files = (
 				3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */,
 				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
+				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,
 				3462D4B62BBEF03D006626CA /* CameraView.swift in Sources */,
@@ -323,9 +327,10 @@
 				DEVELOPMENT_TEAM = KK4TXUS6YX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vreau sa folosesc camera. Ma lasi?";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa folosesc datele din photo library";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa ma uit la poze";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -358,9 +363,10 @@
 				DEVELOPMENT_TEAM = KK4TXUS6YX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vreau sa folosesc camera. Ma lasi?";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa folosesc datele din photo library";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa ma uit la poze";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

@@ -35,7 +35,6 @@ struct ShutterButton: View {
                     .font(.system(size: CGFloat(size)))
                     .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.9, opacity: 1))
                     .padding(10)
-//                    .background(Color.blue)
                     .shadow(radius: 10)
             }
     }

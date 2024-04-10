@@ -12,6 +12,9 @@ struct CameraLiveView: View {
     @State private var isPhotoTaken = false
     @State private var capturedImage: CGImage?
     @State private var showingPhotoPreview = false
+    @State private var isFocused = false
+    @State private var focusLocation: CGPoint = .zero
+    @State private var isScaled = false
     
     let width = UIScreen.main.bounds.width
     
@@ -23,7 +26,8 @@ struct CameraLiveView: View {
                 spacing: 0
             ) {
                 Button (action: {
-                    model.switchFlash()                },
+                    model.switchFlash()
+                },
                         label: {
                     Image(
                         systemName: model.isFlashOn ? "bolt.fill" : "bolt.slash.fill"
@@ -38,33 +42,50 @@ struct CameraLiveView: View {
                     model.isFlashOn ? .yellow : .white
                 )
                 
-                FrameView(
-                    session: model.session
-                )
+                ZStack {
+                    FrameView( session: model.session ) { tapPoint in
+                        isFocused = true
+                        focusLocation = tapPoint
+                        model.setFocus(point: tapPoint)
+                        
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    }
+                    
+                    if isFocused {
+                        FocusView(position: $focusLocation, size: CGFloat(width * 0.15))
+                            .scaleEffect(isScaled ? 0.8 : 1)
+                            .onAppear {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0)) {
+                                    self.isScaled = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                                        self.isFocused = false
+                                        self.isScaled = false
+                                    }
+                                }
+                            }
+                    }
+                }
                 
                 HStack {
                     Gallery(
                         image: $model.capturedImage, size: CGFloat(width * 0.15)
                     )
+                    
                     Spacer()
                     ShutterButton(action: {
                         // TODO: capture photo
-                        //                        self.model.capturePhoto { capturedImage in
-                        //                            if let capturedImage = capturedImage {
-                        //                                self.isPhotoTaken.toggle()
-                        //                                self.model.stopCaptureSession()
-                        //                                self.capturedImage = capturedImage
-                        //                            }
-                        //                        }
-                    },
-                                  size: Int(
-                                    CGFloat(
-                                        width * 0.2
-                                    )
-                                  ))
+                        model.captureImage() /*{ capturedImage in
+                            if let capturedImage = capturedImage {
+                                self.isPhotoTaken.toggle()
+                                self.$model.stopCaptureSession
+                                self.capturedImage = capturedImage
+                            }
+                        }*/
+                    }, size: Int(CGFloat(width * 0.2)))
+                    
                     Spacer()
                     CameraSwitchButton (action: {
-                        //TODO: call camera switch
+                        model.switchCamera()
                     }, size: CGFloat(width * 0.15))
                     
                 }.padding(.horizontal)
@@ -107,7 +128,7 @@ struct CameraLiveView: View {
             }
             .onAppear {
                 model.setupBindings()
-                model.checkForDevicePermission()
+                model.requestCameraPermission()
             }
         }
     }
@@ -151,8 +172,8 @@ struct Gallery: View {
             } else {
                 Rectangle()
                     .frame(
-                        width: 50,
-                        height: 50,
+                        width: size,
+                        height: size,
                         alignment: .center
                     )
                     .foregroundStyle(
@@ -190,6 +211,18 @@ struct CameraSwitchButton: View {
                     )
                 }
         })
+    }
+}
+
+struct FocusView: View {
+    @Binding var position: CGPoint
+    var size: CGFloat?
+    var body: some View {
+        Circle()
+            .frame(width: size, height: size)
+            .foregroundColor(.clear)
+            .border(.yellow, width: 1.5)
+            .position(x: position.x, y: position.y)
     }
 }
 
