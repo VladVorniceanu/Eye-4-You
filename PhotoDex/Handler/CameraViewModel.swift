@@ -81,21 +81,18 @@ class CameraViewModel : ObservableObject {
     }
     
     func setFocus(point: CGPoint) {
-        print("focus in model")
         cameraManager.setFocusOnTap(devicePoint: point)
     }
     
     func switchCamera() {
-        print("switchCameraModel")
         cameraManager.position = cameraManager.position == .back ? .front : .back
         cameraManager.switchCamera()
     }
       
     func captureImage(completion: @escaping (CGImage?) -> Void) {
-//        requestGalleryPermission()
         let permission = checkGalleryPermissionStatus()
         if permission.rawValue != 2 {
-            cameraManager.captureImage()
+            cameraManager.captureImage(completion: completion)
         }
     }
     

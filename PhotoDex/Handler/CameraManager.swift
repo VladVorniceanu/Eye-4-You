@@ -47,7 +47,6 @@ class CameraManager: ObservableObject {
     }
     
     private func setupVideoInput() {
-        print("setup camera manager")
         do {
             let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
             
@@ -94,7 +93,7 @@ class CameraManager: ObservableObject {
     
     var alertError: AlertError = AlertError()
     
-    private func startCapturing() {
+    func startCapturing() {
         if status == .configured {
             self.session.startRunning()
         } else if status == .unconfigured || status == .unauthorized {
@@ -137,13 +136,12 @@ class CameraManager: ObservableObject {
     }
     
     func setFocusOnTap(devicePoint: CGPoint) {
-        print("set focus in manager")
         guard let cameraDevice = self.videoDeviceInput?.device else { return }
         sessionQueue.async {
             do {
                 try cameraDevice.lockForConfiguration()
                 
-                if cameraDevice.isFocusModeSupported(.continuousAutoFocus) && cameraDevice.isFocusPointOfInterestSupported {
+                if cameraDevice.isFocusModeSupported(.autoFocus) && cameraDevice.isFocusPointOfInterestSupported {
                     cameraDevice.focusPointOfInterest = devicePoint
                     cameraDevice.focusMode = .autoFocus
                 }
@@ -154,7 +152,7 @@ class CameraManager: ObservableObject {
                     
                 }
                 
-                cameraDevice.isSubjectAreaChangeMonitoringEnabled = true
+                cameraDevice.isSubjectAreaChangeMonitoringEnabled = false
                 cameraDevice.unlockForConfiguration()
             } catch {
                 print("Failed to configure focus: \(error)")
@@ -163,17 +161,12 @@ class CameraManager: ObservableObject {
     }
     
     func switchCamera() {
-        print("switch camera manager")
         guard let videoDeviceInput else { return }
-        print("switch camera manager after guard")
-        // Remove the current video input
         session.removeInput(videoDeviceInput)
-        
-        // Add the new video input
         setupVideoInput()
     }
     
-    func captureImage() {
+    func captureImage(completion: @escaping (CGImage?) -> Void) {
         sessionQueue.async { [weak self] in
             guard let self else { return }
             
@@ -195,13 +188,18 @@ class CameraManager: ObservableObject {
             
             photoSettings.photoQualityPrioritization = self.photoOutput.maxPhotoQualityPrioritization
             
-            if let videoConnextion = photoOutput.connection(with: .video), videoConnextion.isVideoRotationAngleSupported(90) {
-                videoConnextion.videoRotationAngle = 90
-            }
+//            
             
-            cameraDelegate = CameraDelegate { [weak self] image in
-                self?.capturedImage = image
+            
+            self.cameraDelegate = CameraDelegate { image in
+                if let cgImage = image?.cgImage {
+                    self.capturedImage = image
+                    completion(cgImage)
+                } else {
+                    completion(nil)
+                }
             }
+
             
             if let cameraDelegate {
                 self.photoOutput.capturePhoto(with: photoSettings, delegate: cameraDelegate)

@@ -7,14 +7,15 @@
 
 import SwiftUI
 
-struct PhotoPreviewView: View {
-    @Binding var image: CGImage?
+struct PhotoReview: View {
+    @Binding var image: UIImage?
     @Binding var isPresented: Bool
     
     var body: some View {
         VStack {
             if let image = image {
-                Image(uiImage: UIImage(cgImage: image))
+                
+                Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                 
@@ -34,7 +35,7 @@ struct PhotoPreviewView: View {
                     .foregroundColor(.white)
                     .background(.green)
                     .cornerRadius(10)
-                }
+                }.padding()
             } else {
                 Text("No image captured")
                     .font(.title)
