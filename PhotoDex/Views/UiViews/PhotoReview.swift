@@ -10,6 +10,7 @@ import SwiftUI
 struct PhotoReview: View {
     @Binding var image: UIImage?
     @Binding var isPresented: Bool
+    @State private var showAnalysisView: Bool = false
     
     var body: some View {
         VStack {
@@ -24,18 +25,22 @@ struct PhotoReview: View {
                         self.isPresented = false;
                     }
                     .padding()
-                    .foregroundColor(.white)
-                    .background(.red)
-                    .cornerRadius(10)
+                    .background(Color.gray)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                     
                     Button("Accept") {
-                        
-                    }
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(.green)
-                    .cornerRadius(10)
-                }.padding()
+                                            self.showAnalysisView = true
+                                        }
+                                        .padding()
+                                        .foregroundColor(.white)
+                                        .background(Color.green)
+                                        .cornerRadius(10)
+                                    }
+                                    .padding()
+                                    .sheet(isPresented: $showAnalysisView) {
+                                        MLAnalysysView(image: image)
+                                    }
             } else {
                 Text("No image captured")
                     .font(.title)
