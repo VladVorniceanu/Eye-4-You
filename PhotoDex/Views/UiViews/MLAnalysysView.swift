@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import CoreML
+import Vision
 
 struct MLAnalysysView: View {
     let image: UIImage
-    @State private var prediction: [YOLOv3Model.Prediction] = []
+    @State private var prediction: [CustomMLModel.Prediction] = []
     @State private var analysisErrors: Error?
     
     var body: some View {
@@ -17,15 +19,16 @@ struct MLAnalysysView: View {
             if prediction.isEmpty {
                 if let error = analysisErrors {
                     Text("Error: \(error.localizedDescription)")
-                        .foregroundStyle(.red)
+                    .foregroundStyle(.red)
                 } else {
-                    Text("analyzing...")
+                    ProgressView("Analyzing...")
                 }
             } else {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .overlay(predictionOverlay())
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 416, height: 416)
+                .overlay(predictionOverlay())
             }
         }
         .onAppear {
@@ -35,8 +38,8 @@ struct MLAnalysysView: View {
     
     private func performAnalysis() {
         do {
-        let yoloModel = YOLOv3Model()
-            try yoloModel.makePredictions(for: image) { predictions in
+            let mlModel = CustomMLModel()
+            try mlModel.makePredictions(for: image) { predictions in
                 DispatchQueue.main.async {
                     self.prediction = predictions ?? []
                 }
@@ -45,22 +48,17 @@ struct MLAnalysysView: View {
             self.analysisErrors = error
         }
     }
+    
     private func predictionOverlay() -> some View {
-            // You can customize this function to display the predictions in any way you like
-            // For example, you can draw bounding boxes around detected objects
-            // Or you can simply display the predictions as text overlay
-            // Here, I'm displaying the predictions as a list of text views
-            return VStack(alignment: .leading, spacing: 5) {
-                ForEach(prediction, id: \.clasiffication) { prediction in
-                    Text("\(prediction.clasiffication): \(prediction.confidencePercentage)")
+        return GeometryReader { geometry in
+            ZStack {
+                ForEach(prediction, id: \.label) { prediction in
+                    Text("\(prediction.label)")
+                        .foregroundColor(.white)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(10)
                 }
             }
-            .padding()
-            .background(Color.black.opacity(0.7))
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .padding(10)
         }
     }
-    
-
+}
