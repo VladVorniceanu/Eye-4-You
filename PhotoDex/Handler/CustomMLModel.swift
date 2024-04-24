@@ -23,7 +23,7 @@ class CustomMLModel {
     
     static func createModel() -> VNCoreMLModel {
         let defaultConfiguration = MLModelConfiguration()
-        let imageClassifierWrapper = try? YOLOv3(configuration: defaultConfiguration)
+        let imageClassifierWrapper = try? yolov5s(configuration: defaultConfiguration)
         guard let imageClassifier = imageClassifierWrapper else {
             fatalError("Failed to create an image classifier instance")
         }
@@ -70,15 +70,15 @@ class CustomMLModel {
             print("Vision request had no results.")
             return
         }
-        guard let observations = request.results as? [VNClassificationObservation] else {
-            print("VNRequest produced the wrong result type: \(type(of: request.results)).")
-            return
-        }
-        predictions = observations.map { observation in
-            Prediction(label: observation.identifier,
-                       confidence: observation.confidence,
-                       boundingBox: observation.accessibilityFrame)
-        }
+        guard let results = request.results as? [VNRecognizedObjectObservation] else { return }
+        predictions = results.map({ result in
+            guard let label = result.labels.first?.identifier else { return Prediction(label: "", confidence: VNConfidence.zero, boundingBox: .zero)}
+            let confidence = result.labels.first?.confidence ?? 0.0
+            let boundedBox = result.boundingBox
+            let predictedObject: Prediction = Prediction(label: label, confidence: confidence, boundingBox: boundedBox)
+            return predictedObject
+        })
+        print(predictions ?? "No predictions")
     }
     
     func convertToCVPixelBuffer(toConvert: UIImage) -> CVPixelBuffer? {

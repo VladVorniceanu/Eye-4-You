@@ -27,10 +27,10 @@ struct MLAnalysisView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
 //                .frame(width: 416, height: 416)
-                .overlay(predictionOverlay())
+                .overlay{(predictionOverlay())}
             }
         }
-        .onAppear {
+        .onAppear() {
             performAnalysis()
         }
     }
@@ -41,7 +41,6 @@ struct MLAnalysisView: View {
             try mlModel.makePredictions(for: image) { predictions in
                 DispatchQueue.main.async {
                     self.prediction = predictions ?? []
-                    print("Predictions: \(self.prediction)")
                     self.isAnalyzing = false
                 }
             }
@@ -53,31 +52,31 @@ struct MLAnalysisView: View {
     
     private func predictionOverlay() -> some View {
         GeometryReader { geometry in
-            ZStack {
-                ForEach(prediction, id: \.label) { prediction in
-                    
-                    let boundingBox = prediction.boundingBox
-                    let label = prediction.label
+            ForEach(prediction.indices, id: \.self) { index in
+                let prediction = self.prediction[index]
+                let boundingBox = prediction.boundingBox
 
-                    // Convert the normalized coordinates to the image size.
-                    let x = boundingBox.origin.x * geometry.size.width
-                    let y = boundingBox.origin.y * geometry.size.height
-                    let width = boundingBox.size.width * geometry.size.width
-                    let height = boundingBox.size.height * geometry.size.height
+                // Convert the normalized coordinates to the image size.
+                let x = boundingBox.origin.x * geometry.size.width
+                let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
+                let width = boundingBox.size.width * geometry.size.width
+                let height = boundingBox.size.height * geometry.size.height
 
-                    // Create a rectangle for the bounding box.
-                    Rectangle()
-                        .path(in: CGRect(x: x, y: y, width: width, height: height))
-                        .stroke(Color.red, lineWidth: 2)
+                // Create a rectangle for the bounding box.
+                Rectangle()
+                    .stroke(Color(hue: Double(index) / Double(self.prediction.count), saturation: 1, brightness: 1), lineWidth: 2)
+                    .frame(width: width, height: height)
+                    .position(x: x + width / 2, y: y + height / 2)
 
-                    // Create a text view for the label.
-                    Text(label)
-                        .position(x: x, y: y)
-                        .foregroundColor(.white)
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(10)
-                }
+                // Create a text view for the label and confidence.
+                Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
+                    .foregroundColor(.white)
+                    .padding(2)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(10)
+                    .position(x: x + width / 2, y: y + height)
             }
         }
     }
 }
+
