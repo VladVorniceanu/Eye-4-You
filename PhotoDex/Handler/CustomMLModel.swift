@@ -9,13 +9,27 @@ import Foundation
 import CoreML
 import Vision
 import UIKit
+import CoreGraphics
+
+extension CGRect: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(origin.x)
+        hasher.combine(origin.y)
+        hasher.combine(size.width)
+        hasher.combine(size.height)
+    }
+
+    public static func == (lhs: CGRect, rhs: CGRect) -> Bool {
+        return lhs.origin == rhs.origin && lhs.size == rhs.size
+    }
+}
 
 class CustomMLModel {
     private static let imageClassifier = createModel()
     private var predictionHandlers = [VNRequest: ImagePredictionHandler]()
     typealias ImagePredictionHandler = (_ predictions: [Prediction]?) -> Void
 
-    struct Prediction: Equatable {
+    struct Prediction: Equatable, Hashable {
         let label: String
         let confidence: VNConfidence
         let boundingBox: CGRect
@@ -24,6 +38,12 @@ class CustomMLModel {
             return lhs.label == rhs.label &&
                    lhs.confidence == rhs.confidence &&
                    lhs.boundingBox == rhs.boundingBox
+        }
+        
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(label)
+            hasher.combine(confidence)
+            hasher.combine(boundingBox)
         }
     }
     
@@ -74,7 +94,9 @@ class CustomMLModel {
             return
         }
         guard let results = request.results as? [VNRecognizedObjectObservation] else { return }
-        predictions = results.map({ result in
+        predictions = results.filter({ observation in
+            observation.confidence >= 0.51
+        }).map({ result in
             guard let label = result.labels.first?.identifier else { return Prediction(label: "", confidence: VNConfidence.zero, boundingBox: .zero)}
             let confidence = result.labels.first?.confidence ?? 0.0
             let boundedBox = result.boundingBox

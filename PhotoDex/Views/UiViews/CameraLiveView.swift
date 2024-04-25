@@ -21,9 +21,7 @@ struct CameraLiveView: View {
         ZStack {
             Color.black.ignoresSafeArea()
             
-            VStack(
-                spacing: 0
-            ) {
+            VStack(spacing: 0) {
                 FlashButton(model: model)
                 
                 ZStack {
@@ -60,7 +58,6 @@ struct CameraLiveView: View {
                     ShutterButton(action: {
                         model.captureImage { capturedImage in
                             if let capturedImage = capturedImage {
-//                                self.model.cameraManager.stopCapturing()
                                 self.capturedImage = capturedImage
                                 self.showingPhotoPreview = true
                             }
@@ -115,8 +112,10 @@ struct CameraLiveView: View {
                 model.requestCameraPermission()
             }
             .sheet(isPresented: $showingPhotoPreview) {
-                PhotoReview(image: self.$model.capturedImage, isPresented: self.$showingPhotoPreview)
+                if let capturedImage = model.capturedImage {
+                    PhotoReview(image: capturedImage, isPresented: self.$showingPhotoPreview)
                 }
+            }
         }
         .navigationTitle("Take a photo")
     }

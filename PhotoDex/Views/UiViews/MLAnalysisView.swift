@@ -34,7 +34,7 @@ struct MLAnalysisView: View {
                     
                     if !prediction.isEmpty {
                         Text("Tap on an item to show its overlay...")
-                        List(prediction, id: \.label) { item in
+                        List(prediction, id: \.self) { item in
                             HStack {
                                 Text(item.label.capitalized)
                                 Spacer()

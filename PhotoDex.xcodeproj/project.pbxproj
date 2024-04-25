@@ -21,6 +21,7 @@
 		3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B12BBEC4D5006626CA /* PhotoReview.swift */; };
 		3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B72BBFE590006626CA /* CameraViewModel.swift */; };
 		34650CC02BD8F44100A1CB90 /* yolov5s.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */; };
+		34650CC42BDA8DA300A1CB90 /* PhotoPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34650CC32BDA8DA300A1CB90 /* PhotoPicker.swift */; };
 		348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */; };
 		348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */; };
 		348197A42B9F6BA7008E5F76 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 348197A32B9F6BA7008E5F76 /* Assets.xcassets */; };
@@ -45,6 +46,7 @@
 		3462D4B12BBEC4D5006626CA /* PhotoReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoReview.swift; sourceTree = "<group>"; };
 		3462D4B72BBFE590006626CA /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
 		34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; name = yolov5s.mlmodel; path = MLModels/yolov5s.mlmodel; sourceTree = "<group>"; };
+		34650CC32BDA8DA300A1CB90 /* PhotoPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoPicker.swift; sourceTree = "<group>"; };
 		3481979C2B9F6BA6008E5F76 /* PhotoDex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDexApp.swift; sourceTree = "<group>"; };
 		348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLiveView.swift; sourceTree = "<group>"; };
@@ -106,6 +108,7 @@
 				348197AF2B9F8259008E5F76 /* CameraManager.swift */,
 				3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */,
 				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
+				34650CC32BDA8DA300A1CB90 /* PhotoPicker.swift */,
 				3405BF192BCAD84300CE302F /* CustomMLModel.swift */,
 			);
 			path = Handler;
@@ -228,6 +231,7 @@
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
 				3405BF032BC8201800CE302F /* GalleryThumbnail.swift in Sources */,
+				34650CC42BDA8DA300A1CB90 /* PhotoPicker.swift in Sources */,
 				3405BF1A2BCAD84300CE302F /* CustomMLModel.swift in Sources */,
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,
 				3405BF0B2BC82F7F00CE302F /* FlashButton.swift in Sources */,
