@@ -15,10 +15,16 @@ class CustomMLModel {
     private var predictionHandlers = [VNRequest: ImagePredictionHandler]()
     typealias ImagePredictionHandler = (_ predictions: [Prediction]?) -> Void
 
-    struct Prediction {
+    struct Prediction: Equatable {
         let label: String
         let confidence: VNConfidence
         let boundingBox: CGRect
+        
+        static func ==(lhs: Prediction, rhs: Prediction) -> Bool {
+            return lhs.label == rhs.label &&
+                   lhs.confidence == rhs.confidence &&
+                   lhs.boundingBox == rhs.boundingBox
+        }
     }
     
     static func createModel() -> VNCoreMLModel {
@@ -43,14 +49,11 @@ class CustomMLModel {
         let handler = VNImageRequestHandler(cvPixelBuffer: cvPixelBufferPhoto)
         let requests: [VNRequest] = [imageAnalysisRequest]
         
-        // Start the image classification request.
         try handler.perform(requests)
     }
     
     private func createImageAnalysisRequest() -> VNImageBasedRequest {
-        // Create an image classification request with an image classifier model.
         let imageAnalysisRequest = VNCoreMLRequest(model: CustomMLModel.imageClassifier, completionHandler: visionRequestHandler)
-//        imageAnalysisRequest.imageCropAndScaleOption = .centerCrop
         return imageAnalysisRequest
     }
     
