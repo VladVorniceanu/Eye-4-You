@@ -14,40 +14,35 @@ struct PhotoReview: View {
     @State private var analysisView: MLAnalysisView? = nil
     
     var body: some View {
-        VStack {
-            if let image = image {
-                
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                
-                HStack (spacing: 20) {
-                    Button("Retake") {
-                        self.isPresented = false;
-                    }
-                    .padding()
-                    .background(Color.gray)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+        NavigationStack {
+            VStack {
+                if let image = image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
                     
-                    Button("Accept") {
-                        self.analysisView = MLAnalysisView(image: image)
-                        self.showAnalysisView = true
+                    HStack (spacing: 20) {
+                        Button("Retake") {
+                            self.isPresented = false;
+                        }
+                        .padding()
+                        .background(Color.gray)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        
+                        NavigationLink(destination: MLAnalysisView(image: image)) {
+                            Text("Analyze image...")
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundStyle(.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        }.padding()
                     }
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(Color.green)
-                    .cornerRadius(10)
-                    
+                } else {
+                    Text("No image captured")
+                        .font(.title)
+                        .foregroundStyle(.primary)
                 }
-                .padding()
-                .sheet(isPresented: $showAnalysisView) {
-                    self.analysisView
-                }
-            } else {
-                Text("No image captured")
-                    .font(.title)
-                    .foregroundStyle(.primary)
             }
         }
     }

@@ -31,7 +31,6 @@ struct MLAnalysisView: View {
                     .frame(width: geometry.size.width)
                     .clipped()
                     .overlay{(predictionOverlay())}
-                    .padding(.top, 20)
                     
                     if !prediction.isEmpty {
                         Text("Tap on an item to show its overlay...")
