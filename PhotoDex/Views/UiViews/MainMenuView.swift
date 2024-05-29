@@ -10,17 +10,20 @@ import PhotosUI
 
 struct MainMenuView: View {
     @StateObject private var viewModel = PhotoPicker()
+    private var hasAppeared = false;
     
     var body: some View {
         NavigationStack {
             VStack {
-                Text("Welcome to PhotoDex")
-                    .font(.title)
-                    .padding(.all)
+                Text("PhotoDex")
+                    .font(.largeTitle)
+                    .padding()
+                    .animation(.easeIn, value: 20)
+                
                 
                 NavigationStack {
                     NavigationLink(destination: CameraLiveView()) {
-                        Text("Start camera")
+                        Text("Accesează camera")
                             .padding()
                             .background(Color.blue)
                             .foregroundStyle(.white)
@@ -30,7 +33,7 @@ struct MainMenuView: View {
                                  matching: .images,
                                  preferredItemEncoding: .current,
                                  photoLibrary: .shared()) {
-                        Text("Choose from Gallery")
+                        Text("Alege din galerie")
                             .padding()
                             .background(Color.blue)
                             .foregroundStyle(.white)

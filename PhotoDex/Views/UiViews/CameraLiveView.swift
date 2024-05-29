@@ -94,13 +94,13 @@ struct CameraLiveView: View {
             ) {
                 Alert(
                     title: Text(
-                        "Warning"
+                        "Atenție"
                     ),
                     message: Text(
-                        "Application doesn't have all permissions to use camera and microphone, please change privacy settings."
+                        "Aplicația nu are acces la cameră. Pentru a putea folosi funcționalitățile aplicației, acordați permisiunile necesare aplicației, din setările dispozitivului."
                     ),
                     dismissButton: .default(Text(
-                        "Go to settings"
+                        "Du-te la setări"
                     ),
                                             action: {
                                                 self.openSettings()
@@ -117,7 +117,7 @@ struct CameraLiveView: View {
                 }
             }
         }
-        .navigationTitle("Take a photo")
+        .navigationTitle("Capturează o imagine")
     }
     
     func openSettings() {

@@ -20,7 +20,7 @@ struct MLAnalysisView: View {
         GeometryReader { geometry in
             VStack {
                 if isAnalyzing {
-                    ProgressView("Analyzing...")
+                    ProgressView("Se analizează...")
                 } else if let error = analysisErrors {
                     Text("Error: \(error.localizedDescription)")
                     .foregroundStyle(.red)
@@ -33,7 +33,7 @@ struct MLAnalysisView: View {
                     .overlay{(predictionOverlay())}
                     
                     if !prediction.isEmpty {
-                        Text("Tap on an item to show its overlay...")
+                        Text("Apasă pe un element din listă pentru a îl afișa")
                         List(prediction, id: \.self) { item in
                             HStack {
                                 Text(item.label.capitalized)
@@ -53,7 +53,7 @@ struct MLAnalysisView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center) 
             .padding(.all, 0)
-        }
+        }.navigationTitle("Imaginea analizată")
     }
     
     private func performAnalysis() {

@@ -21,13 +21,14 @@ struct PhotoReview: View {
                     .aspectRatio(contentMode: .fit)
                     
                 NavigationLink(destination: MLAnalysisView(image: image)) {
-                    Text("Analyze image...")
+                    Text("Analizează imaginea")
                         .padding()
                         .background(Color.blue)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                 }.padding()
             }
-        }
+        }.navigationTitle("Imaginea capturată")
     }
 }
+
