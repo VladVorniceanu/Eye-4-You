@@ -28,6 +28,7 @@
 		348197A72B9F6BA7008E5F76 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 348197A62B9F6BA7008E5F76 /* Preview Assets.xcassets */; };
 		348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AD2B9F818A008E5F76 /* FrameView.swift */; };
 		348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AF2B9F8259008E5F76 /* CameraManager.swift */; };
+		34F32C452C1A4295008B279A /* ObjectDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34F32C442C1A4295008B279A /* ObjectDetector.swift */; };
 		34F4183D2BCFAF2200DD9A25 /* YOLOv3.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 34F4183C2BCFAF2200DD9A25 /* YOLOv3.mlpackage */; };
 /* End PBXBuildFile section */
 
@@ -54,6 +55,7 @@
 		348197A62B9F6BA7008E5F76 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		348197AD2B9F818A008E5F76 /* FrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameView.swift; sourceTree = "<group>"; };
 		348197AF2B9F8259008E5F76 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
+		34F32C442C1A4295008B279A /* ObjectDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectDetector.swift; sourceTree = "<group>"; };
 		34F4183C2BCFAF2200DD9A25 /* YOLOv3.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = YOLOv3.mlpackage; path = MLModels/YOLOv3.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -110,6 +112,7 @@
 				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
 				34650CC32BDA8DA300A1CB90 /* PhotoPicker.swift */,
 				3405BF192BCAD84300CE302F /* CustomMLModel.swift */,
+				34F32C442C1A4295008B279A /* ObjectDetector.swift */,
 			);
 			path = Handler;
 			sourceTree = "<group>";
@@ -228,6 +231,7 @@
 				3405BF052BC820DC00CE302F /* CameraSwitchButton.swift in Sources */,
 				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
 				34650CC02BD8F44100A1CB90 /* yolov5s.mlmodel in Sources */,
+				34F32C452C1A4295008B279A /* ObjectDetector.swift in Sources */,
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
 				3405BF032BC8201800CE302F /* GalleryThumbnail.swift in Sources */,

@@ -28,7 +28,7 @@ struct PhotoReview: View {
                         .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                 }.padding()
             }
-        }.navigationTitle("Imaginea capturată")
+        }
     }
 }
 

@@ -1,21 +1,13 @@
-//
-//  MLAnalysysView.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 13.04.2024.
-//
-
 import SwiftUI
-import CoreML
-import Vision
+import UIKit
 
 struct MLAnalysisView: View {
     let image: UIImage
     @State private var prediction: [CustomMLModel.Prediction] = []
     @State private var analysisErrors: Error?
     @State private var isAnalyzing: Bool = true
-    @State private var selectedItem: CustomMLModel.Prediction?
-    
+    @State private var selectedItems: Set<UUID> = []
+
     var body: some View {
         GeometryReader { geometry in
             VStack {
@@ -27,7 +19,7 @@ struct MLAnalysisView: View {
                 } else {
                     Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .aspectRatio(contentMode: .fit)
                     .frame(width: geometry.size.width)
                     .clipped()
                     .overlay{(predictionOverlay())}
@@ -36,15 +28,26 @@ struct MLAnalysisView: View {
                         Text("Apasă pe un element din listă pentru a îl afișa")
                         List(prediction, id: \.self) { item in
                             HStack {
-                                Text(item.label.capitalized)
-                                Spacer()
-                                Text("\(item.confidence*100)%")
+                                Toggle(isOn: Binding(
+                                    get: { selectedItems.contains(item.id) },
+                                    set: { isSelected in
+                                        if isSelected {
+                                            selectedItems.insert(item.id)
+                                        } else {
+                                            selectedItems.remove(item.id)
+                                        }
+                                    }
+                                )) {
+                                    VStack(alignment: .leading) {
+                                        Text(item.label.capitalized)
+                                        Text("\(String(format: "%.2f", (item.confidence) * 100))%")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectedItem = item
-                            }
-                        }.padding(.all, 0)
+                        }
+                        .padding(.all, 0)
                     }
                 }
             }
@@ -55,48 +58,56 @@ struct MLAnalysisView: View {
             .padding(.all, 0)
         }.navigationTitle("Imaginea analizată")
     }
-    
+
     private func performAnalysis() {
-        do {
-            let mlModel = CustomMLModel()
-            try mlModel.makePredictions(for: image) { predictions in
+        let mlModel = CustomMLModel.shared
+        DispatchQueue.global(qos: .background).async {
+            do {
+                try mlModel.makePredictions(for: image) { predictions in
+                    DispatchQueue.main.async {
+                        if let predictions = predictions {
+                            self.prediction = predictions
+                            print(predictions)
+                            self.isAnalyzing = false
+                        } else {
+                            self.analysisErrors = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
+                            self.isAnalyzing = false
+                        }
+                    }
+                }
+            } catch {
                 DispatchQueue.main.async {
-                    self.prediction = predictions ?? []
+                    self.analysisErrors = error
                     self.isAnalyzing = false
                 }
             }
-        } catch {
-            self.analysisErrors = error
-            self.isAnalyzing = false
         }
     }
     
     private func predictionOverlay() -> some View {
         GeometryReader { geometry in
             ForEach(prediction.indices, id: \.self) { index in
-                if prediction[index] == selectedItem {
-                    let prediction = self.prediction[index]
-                let boundingBox = prediction.boundingBox
+                let prediction = self.prediction[index]
+                
+                if selectedItems.contains(prediction.id), let boundingBox = prediction.boundingBox {
+                    let x = boundingBox.origin.x * geometry.size.width
+                    let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
+                    let width = boundingBox.size.width * geometry.size.width
+                    let height = boundingBox.size.height * geometry.size.height
 
-                let x = boundingBox.origin.x * geometry.size.width
-                let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
-                let width = boundingBox.size.width * geometry.size.width
-                let height = boundingBox.size.height * geometry.size.height
+                    Rectangle()
+                        .stroke(Color(hue: Double(index) / Double(self.prediction.count), saturation: 1, brightness: 1), lineWidth: 2)
+                        .frame(width: width, height: height)
+                        .position(x: x + width / 2, y: y + height / 2)
 
-                Rectangle()
-                    .stroke(Color(hue: Double(index) / Double(self.prediction.count), saturation: 1, brightness: 1), lineWidth: 2)
-                    .frame(width: width, height: height)
-                    .position(x: x + width / 2, y: y + height / 2)
-
-                Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
-                    .foregroundColor(.white)
-                    .padding(2)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(10)
-                    .position(x: x + width / 2, y: y + height)
+                    Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
+                        .foregroundColor(.white)
+                        .padding(2)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(10)
+                        .position(x: x + width / 2, y: y + height)
                 }
             }
         }
     }
 }
-

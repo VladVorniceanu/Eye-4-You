@@ -56,12 +56,19 @@ struct CameraLiveView: View {
                     Spacer()
                     
                     ShutterButton(action: {
-                        model.captureImage { capturedImage in
-                            if let capturedImage = capturedImage {
-                                self.capturedImage = capturedImage
-                                self.showingPhotoPreview = true
+                        DispatchQueue.global(qos: .background).async {
+                            do {
+                                model.captureImage { capturedImage in
+                                    if let capturedImage = capturedImage {
+                                        DispatchQueue.main.async {
+                                            self.capturedImage = capturedImage
+                                            self.showingPhotoPreview = true
+                                        }
+                                    }
+                                }
                             }
                         }
+                        
                     })
                     
                     Spacer()
@@ -84,9 +91,9 @@ struct CameraLiveView: View {
                     dismissButton: .default(Text(
                         model.alertError.primaryButtonTitle
                     ),
-                                            action: {
-                                                model.alertError.primaryAction?()
-                                            })
+                    action: {
+                        model.alertError.primaryAction?()
+                    })
                 )
             }
             .alert(
@@ -102,18 +109,21 @@ struct CameraLiveView: View {
                     dismissButton: .default(Text(
                         "Du-te la setări"
                     ),
-                                            action: {
-                                                self.openSettings()
-                                            })
+                    action: {
+                        self.openSettings()
+                    })
                 )
             }
             .onAppear {
-                model.setupBindings()
-                model.requestCameraPermission()
+                DispatchQueue.global(qos: .background).async {
+                    model.setupBindings()
+                                    model.requestCameraPermission()
+                }
             }
             .sheet(isPresented: $showingPhotoPreview) {
                 if let capturedImage = model.capturedImage {
                     PhotoReview(image: capturedImage, isPresented: self.$showingPhotoPreview)
+                        .navigationTitle("Imaginea capturată")
                 }
             }
         }

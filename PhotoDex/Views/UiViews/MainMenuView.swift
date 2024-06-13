@@ -10,6 +10,10 @@ import PhotosUI
 
 struct MainMenuView: View {
     @StateObject private var viewModel = PhotoPicker()
+    @StateObject private var customMLModel = CustomMLModel.shared
+    @State private var isLoadingModels = true
+
+
     private var hasAppeared = false;
     
     var body: some View {
@@ -19,7 +23,6 @@ struct MainMenuView: View {
                     .font(.largeTitle)
                     .padding()
                     .animation(.easeIn, value: 20)
-                
                 
                 NavigationStack {
                     NavigationLink(destination: CameraLiveView()) {
@@ -44,6 +47,11 @@ struct MainMenuView: View {
                         }
                     }
                 }
+            }
+        }
+        .onAppear {
+            DispatchQueue.global(qos: .background).async {
+                isLoadingModels = !(CustomMLModel.yoloModel != nil && CustomMLModel.mobileNetModel != nil)
             }
         }
         .sheet(isPresented: $viewModel.isImageSelected) {
