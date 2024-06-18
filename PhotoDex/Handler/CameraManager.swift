@@ -188,9 +188,6 @@ class CameraManager: ObservableObject {
             
             photoSettings.photoQualityPrioritization = self.photoOutput.maxPhotoQualityPrioritization
             
-//            
-            
-            
             self.cameraDelegate = CameraDelegate { image in
                 if let cgImage = image?.cgImage {
                     self.capturedImage = image
@@ -199,7 +196,6 @@ class CameraManager: ObservableObject {
                     completion(nil)
                 }
             }
-
             
             if let cameraDelegate {
                 self.photoOutput.capturePhoto(with: photoSettings, delegate: cameraDelegate)

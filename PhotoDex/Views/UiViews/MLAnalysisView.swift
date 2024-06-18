@@ -19,13 +19,12 @@ struct MLAnalysisView: View {
                 } else {
                     Image(uiImage: image)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .aspectRatio(contentMode: .fill)
                     .frame(width: geometry.size.width)
                     .clipped()
                     .overlay{(predictionOverlay())}
                     
                     if !prediction.isEmpty {
-                        Text("Apasă pe un element din listă pentru a îl afișa")
                         List(prediction, id: \.self) { item in
                             HStack {
                                 Toggle(isOn: Binding(

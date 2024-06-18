@@ -22,7 +22,7 @@ struct MainMenuView: View {
                 Text("PhotoDex")
                     .font(.largeTitle)
                     .padding()
-                    .animation(.easeIn, value: 20)
+                    .animation(.bouncy, value: isLoadingModels)
                 
                 NavigationStack {
                     NavigationLink(destination: CameraLiveView()) {
@@ -33,7 +33,7 @@ struct MainMenuView: View {
                             .clipShape(RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/, style: .continuous))
                     }
                     PhotosPicker(selection: $viewModel.imageSelection, 
-                                 matching: .images,
+                                 matching: .any(of: [.images, .not(.screenshots)]),
                                  preferredItemEncoding: .current,
                                  photoLibrary: .shared()) {
                         Text("Alege din galerie")
