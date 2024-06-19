@@ -20,14 +20,22 @@ struct PhotoReview: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     
-                NavigationLink(destination: MLAnalysisView(image: image)) {
+                NavigationLink(destination: MLAnalysisView(image: image, isPresented: self.$isPresented)) {
                     Text("Analizează imaginea")
                         .padding()
                         .background(Color.blue)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                 }.padding()
-            }
+            }.navigationTitle("Imaginea de analizat")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Închide") {
+                            isPresented = false
+                        }
+                    }
+                }
         }
     }
 }

@@ -9,8 +9,9 @@ import SwiftUI
 import PhotosUI
 
 struct CameraLiveView: View {
-    @ObservedObject var model = CameraViewModel()
-    @StateObject var viewModel = PhotoPicker()
+    @State var isLiveDetectionFlow: Bool
+    @ObservedObject private var model = CameraViewModel()
+    @StateObject private var viewModel = PhotoPicker()
     @StateObject private var imageState = ImageState()
     @State private var focusLocation: CGPoint = .zero
     @State private var showingPhotoReview = false
@@ -52,39 +53,41 @@ struct CameraLiveView: View {
                 }
                 
                 HStack {
-                    PhotosPicker(selection: $viewModel.imageSelection,
-                                 matching: .any(of: [.images, .not(.screenshots)]),
-                                 preferredItemEncoding: .current,
-                                 photoLibrary: .shared()) {
-                        GalleryThumbnail(image: $imageState.uiImage)
-                    }.onChange(of: viewModel.imageSelection) { newValue in
-                        guard let newValue else { return }
-                        Task {
-                            await loadImage(from: newValue)
+                    if !isLiveDetectionFlow {
+                        PhotosPicker(selection: $viewModel.imageSelection,
+                                     matching: .any(of: [.images, .not(.screenshots)]),
+                                     preferredItemEncoding: .current,
+                                     photoLibrary: .shared()) {
+                            GalleryThumbnail(image: $imageState.uiImage)
+                        }.onChange(of: viewModel.imageSelection) { newValue in
+                            guard let newValue else { return }
+                            Task {
+                                await loadImage(from: newValue)
+                            }
                         }
-                    }
-                    
-                    Spacer()
-                    
-                    ShutterButton(action: {
-                        isLoadingImage = true
-                        DispatchQueue.global(qos: .background).async {
-                            do {
-                                model.captureImage { _ in
-                                    if let image = model.capturedImage {
-                                        DispatchQueue.main.async {
-                                            imageState.setUIImage(image)
-                                            isLoadingImage = false
-                                            showingPhotoReview = true
+                        
+                        Spacer()
+                        
+                        ShutterButton(action: {
+                            isLoadingImage = true
+                            DispatchQueue.global(qos: .background).async {
+                                do {
+                                    model.captureImage { _ in
+                                        if let image = model.capturedImage {
+                                            DispatchQueue.main.async {
+                                                imageState.setUIImage(image)
+                                                isLoadingImage = false
+                                                showingPhotoReview = true
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
+                            
+                        })
                         
-                    })
-                    
-                    Spacer()
+                        Spacer()
+                    }
                     CameraSwitchButton(action: {
                         model.switchCamera()
                     })
@@ -128,8 +131,7 @@ struct CameraLiveView: View {
                 if let uiImage = imageState.uiImage {
                     NavigationView {
                         PhotoReview(image: uiImage, isPresented: self.$showingPhotoReview)
-                    }.presentationDetents([.fraction(UIScreen.main.bounds.height*0.8)])
-                        .interactiveDismissDisabled(false)
+                    }
                 }
                 
             }
