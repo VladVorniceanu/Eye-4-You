@@ -34,14 +34,18 @@ class CameraViewModel : ObservableObject {
     
     func setupBindings() {
         cameraManager.$shouldShowAlertView.sink { [weak self] value in
-            self?.alertError = self?.cameraManager.alertError
-            self?.showAlertError = value
+            DispatchQueue.main.async {
+                self?.alertError = self?.cameraManager.alertError
+                self?.showAlertError = value
+            }
         }
         .store(in: &cancelables)
         
         cameraManager.$capturedImage.sink { [weak self] image in
-                    self?.capturedImage = image
-                }.store(in: &cancelables)
+            DispatchQueue.main.async {
+                self?.capturedImage = image
+            }
+        }.store(in: &cancelables)
     }
     
     func requestCameraPermission() {
@@ -63,14 +67,16 @@ class CameraViewModel : ObservableObject {
     
     func checkForDevicePermission() {
         let videoStatus = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
-        if videoStatus == .authorized {
-            isPermissionGranted = true
-            cameraManager.setUpCaptureSession()
-        } else if videoStatus == .notDetermined {
-            AVCaptureDevice.requestAccess(for: .video, completionHandler: {_ in})
-        } else if videoStatus == .denied {
-            isPermissionGranted = false
-            showSettingAlert = true
+        DispatchQueue.main.async {
+            if videoStatus == .authorized {
+                self.isPermissionGranted = true
+                self.cameraManager.setUpCaptureSession()
+            } else if videoStatus == .notDetermined {
+                AVCaptureDevice.requestAccess(for: .video, completionHandler: {_ in})
+            } else if videoStatus == .denied {
+                self.isPermissionGranted = false
+                self.showSettingAlert = true
+            }
         }
         requestGalleryPermission()
     }
@@ -89,7 +95,7 @@ class CameraViewModel : ObservableObject {
         cameraManager.switchCamera()
     }
       
-    func captureImage(completion: @escaping (CGImage?) -> Void) {
+    func captureImage(completion: @escaping (UIImage?) -> Void) {
         let permission = checkGalleryPermissionStatus()
         if permission.rawValue != 2 {
             cameraManager.captureImage(completion: completion)

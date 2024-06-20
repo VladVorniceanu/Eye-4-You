@@ -1,5 +1,5 @@
 //
-//  FrameHandler.swift
+//  CameraManager.swift
 //  PhotoDex
 //
 //  Created by Vlad Vorniceanu on 11.03.2024.
@@ -18,34 +18,40 @@ enum Status {
     case failed
 }
 
-class CameraManager: ObservableObject {
-    
+class CameraManager: NSObject, ObservableObject {
+    @Published var isLiveDetectionFlow: Bool = false
+    @Published private var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var status = Status.unconfigured
     @Published var shouldShowAlertView = false
-    @Published private var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var capturedImage: UIImage? = nil
-    
+    @Published var frame: UIImage? = nil
+    @Published var predictions: [CustomMLModel.Prediction] = []
+    @Published var analysisError: Error? = nil
     private var cameraDelegate: CameraDelegate?
-    
-    var position: AVCaptureDevice.Position = .back
+    private let sessionQueue = DispatchQueue(label: "com.PhotoDex.sessionQueue")
+    private let queue = DispatchQueue(label: "camera-queue")
+    private let customMLModel = CustomMLModel.shared
     let session = AVCaptureSession()
     let photoOutput = AVCapturePhotoOutput()
+    let videoOutput = AVCaptureVideoDataOutput()
     var videoDeviceInput: AVCaptureDeviceInput?
+    var position: AVCaptureDevice.Position = .back
+    var alertError: AlertError = AlertError()
     
-    private let sessionQueue = DispatchQueue(label: "com.PhotoDex.sessionQueue")
-    
+    //MARK: - Setuping session and devices input
     func setUpCaptureSession() {
-        sessionQueue.async { [weak self] in
+        self.sessionQueue.async { [weak self] in
             guard let self, self.status == .unconfigured else { return }
             session.beginConfiguration()
             self.session.sessionPreset = .photo
             self.setupVideoInput()
             self.setupPhotoOutput()
+            self.setupVideoOutput()
             self.session.commitConfiguration()
             self.startCapturing()
         }
     }
-    
+
     private func setupVideoInput() {
         do {
             let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
@@ -91,17 +97,31 @@ class CameraManager: ObservableObject {
         }
     }
     
-    var alertError: AlertError = AlertError()
+    private func setupVideoOutput() {
+        if session.canAddOutput(videoOutput) {
+            session.addOutput(videoOutput)
+            videoOutput.setSampleBufferDelegate(self, queue: queue)
+            videoOutput.alwaysDiscardsLateVideoFrames = true
+            status = .configured
+        } else {
+            print("CameraManager: could not add video output to the session")
+            status = .failed
+            session.commitConfiguration()
+            return
+        }
+    }
     
+    //MARK: - Functional methods and functions
     func startCapturing() {
         if status == .configured {
-            self.session.startRunning()
+            sessionQueue.async {
+                self.session.startRunning()
+            }
         } else if status == .unconfigured || status == .unauthorized {
             DispatchQueue.main.async {
                 self.alertError = AlertError(title: "Camera Error", message: "Camera configuration failed. Either your device camera is not available or its missing permissions", primaryButtonTitle: "ok", secondaryButtonTitle: nil, primaryAction: nil, secondaryAction: nil)
                 self.shouldShowAlertView = true
                 print("CameraManager: camera config failed");
-                
             }
         }
     }
@@ -166,10 +186,23 @@ class CameraManager: ObservableObject {
         setupVideoInput()
     }
     
-    func captureImage(completion: @escaping (CGImage?) -> Void) {
+    func captureImage(completion: @escaping (UIImage?) -> Void) {
         sessionQueue.async { [weak self] in
-            guard let self else { return }
+            guard let self = self else { return }
             
+            guard self.session.isRunning else {
+                print("CameraManager: Session is not running")
+                completion(nil)
+                return
+            }
+
+            // Check if the photoOutput is properly added to the session
+            guard self.session.outputs.contains(self.photoOutput) else {
+                print("CameraManager: Photo output is not added to the session")
+                completion(nil)
+                return
+            }
+        
             var photoSettings = AVCapturePhotoSettings()
             
             if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
@@ -189,22 +222,73 @@ class CameraManager: ObservableObject {
             photoSettings.photoQualityPrioritization = self.photoOutput.maxPhotoQualityPrioritization
             
             self.cameraDelegate = CameraDelegate { image in
-                if let cgImage = image?.cgImage {
-                    self.capturedImage = image
-                    completion(cgImage)
+                if let imagineCapturata = image {
+                    self.capturedImage = imagineCapturata
+                    print("CameraManager: Image captured successfully")
+                    completion(imagineCapturata)
                 } else {
+                    print("CameraManager: No image captured")
                     completion(nil)
                 }
             }
             
-            if let cameraDelegate {
+            if let cameraDelegate = self.cameraDelegate {
+                print("CameraManager: Starting photo capture")
                 self.photoOutput.capturePhoto(with: photoSettings, delegate: cameraDelegate)
+            } else {
+                print("CameraManager: cameraDelegate is nil")
+                completion(nil)
             }
         }
     }
 }
+//MARK: - Extension for CameraManager to handle video output
+extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        
+        if !isLiveDetectionFlow {
+            return
+        }
+        
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let context = CIContext(options: nil)
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
+        let uiImage = UIImage(cgImage: cgImage)
+        
+        DispatchQueue.global(qos: .background).async {
+            do {
+                try self.customMLModel.makePredictions(on: pixelBuffer) { predictions in
+                    DispatchQueue.main.async {
+                        if let predictions = predictions {
+                            self.predictions = predictions
+                            self.analysisError = nil
+                        } else {
+                            self.analysisError = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
+                        }
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.analysisError = error
+                }
+            }
+        }
+    }
+}
+//MARK: - Extension of UIImage to create an image from a pixel buffer
+extension UIImage {
+    convenience init?(pixelBuffer: CVPixelBuffer) {
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let context = CIContext()
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+            return nil
+        }
+        self.init(cgImage: cgImage)
+    }
+}
 
-
+//MARK: - Declaration of an AlertError type of message
 public struct AlertError {
     public var title: String = ""
     public var message: String = ""

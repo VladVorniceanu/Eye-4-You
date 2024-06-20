@@ -73,6 +73,7 @@
 		3405BF082BC823D900CE302F /* UiCustomElements */ = {
 			isa = PBXGroup;
 			children = (
+				348197AD2B9F818A008E5F76 /* FrameView.swift */,
 				3405BF042BC820DC00CE302F /* CameraSwitchButton.swift */,
 				3405BF002BC81EB100CE302F /* ShutterButton.swift */,
 				3405BF062BC8215700CE302F /* FocusView.swift */,
@@ -89,7 +90,6 @@
 				348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */,
 				3462D4B12BBEC4D5006626CA /* PhotoReview.swift */,
 				3405BF172BCACF7000CE302F /* MLAnalysisView.swift */,
-				348197AD2B9F818A008E5F76 /* FrameView.swift */,
 				3462D4872BBC2B3C006626CA /* MainMenuView.swift */,
 			);
 			path = UiViews;

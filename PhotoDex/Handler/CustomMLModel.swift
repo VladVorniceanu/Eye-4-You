@@ -242,4 +242,38 @@ class CustomMLModel : ObservableObject {
         path.close()
         return path
     }
+    // Function to make real-time predictions on CVPixelBuffer
+    func makePredictions(on pixelBuffer: CVPixelBuffer, completionHandler: @escaping ImagePredictionHandler) {
+        let yoloRequest = VNCoreMLRequest(model: CustomMLModel.yoloModel) { (request, error) in
+            self.visionRequestHandler(request, error: error)
+        }
+        yoloRequest.imageCropAndScaleOption = .scaleFill
+
+        predictionHandlers[yoloRequest] = { yoloPredictions in
+            guard let yoloPredictions = yoloPredictions else {
+                completionHandler(nil)
+                return
+            }
+
+            let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+            let context = CIContext()
+            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+                completionHandler(nil)
+                return
+            }
+            let image = UIImage(cgImage: cgImage)
+
+            self.handleYOLOPredictions(yoloPredictions: yoloPredictions, photo: image, completionHandler: completionHandler)
+        }
+
+        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:])
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                try handler.perform([yoloRequest])
+            } catch {
+                print("Failed to perform request: \(error)")
+                completionHandler(nil)
+            }
+        }
+    }
 }

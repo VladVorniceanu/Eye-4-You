@@ -18,17 +18,19 @@ class CameraDelegate: NSObject, AVCapturePhotoCaptureDelegate {
     }
     
     func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        if let error {
-            print("CameraManager: Error while capturing photo: \(error)");
+        if let error = error {
+            print("CameraManager: Error while capturing photo: \(error)")
             completion(nil)
             return
         }
         
         if let imageData = photo.fileDataRepresentation(), let capturedImage = UIImage(data: imageData) {
             saveImageToGallery(capturedImage)
+            print("CameraDelegate: Image captured and processed successfully")
             completion(capturedImage)
         } else {
-            print("CameraManager: Image not fetched");
+            print("CameraDelegate: Image data is nil or cannot be created")
+            completion(nil)
         }
     }
     

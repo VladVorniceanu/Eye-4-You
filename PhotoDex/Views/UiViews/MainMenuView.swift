@@ -84,18 +84,25 @@ struct MainMenuView: View {
         }
     }
     func loadImage(from selection: PhotosPickerItem) async {
-        isLoadingImage = true
+        DispatchQueue.main.async {
+            self.isLoadingImage = true
+        }
         do {
             if let data = try await selection.loadTransferable(type: Data.self) {
                 if let image = UIImage(data: data) {
-                    viewModel.selectedImage = image
-                    viewModel.isImageSelected = true
+                    DispatchQueue.main.async {
+                        viewModel.selectedImage = image
+                        viewModel.isImageSelected = true
+                        self.isLoadingImage = false
+                    }
                 }
             }
         } catch {
             print("Error loading image: \(error.localizedDescription)")
+            DispatchQueue.main.async {
+                self.isLoadingImage = false
+            }
         }
-        isLoadingImage = false
     }
 
 }

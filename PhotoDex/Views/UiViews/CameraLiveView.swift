@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  CameraLiveView.swift
 //  PhotoDex
 //
 //  Created by Vlad Vorniceanu on 11.03.2024.
@@ -18,6 +18,9 @@ struct CameraLiveView: View {
     @State private var isFocused = false
     @State private var isScaled = false
     @State private var isLoadingImage = false
+    @State private var predictions: [CustomMLModel.Prediction] = []
+    @State private var selectedItems: Set<UUID> = []
+    @State private var analysisError: Error?
 
     let width = UIScreen.main.bounds.width
     
@@ -29,11 +32,10 @@ struct CameraLiveView: View {
                 FlashButton(model: model)
                 
                 ZStack {
-                    FrameView(session: model.session) { tapPoint in
+                    FrameView(isLiveDetectionFlow: self.isLiveDetectionFlow, session: model.session, predictions: $predictions, analysisError: $analysisError) { tapPoint in
                         isFocused = true
                         focusLocation = tapPoint
                         model.setFocus(point: tapPoint)
-                        
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
                     
@@ -50,49 +52,54 @@ struct CameraLiveView: View {
                             }
                         }
                     }
+                    OverlayView(predictions: $predictions, selectedItems: $selectedItems)
                 }
                 
                 HStack {
-                    if !isLiveDetectionFlow {
-                        PhotosPicker(selection: $viewModel.imageSelection,
-                                     matching: .any(of: [.images, .not(.screenshots)]),
-                                     preferredItemEncoding: .current,
-                                     photoLibrary: .shared()) {
-                            GalleryThumbnail(image: $imageState.uiImage)
-                        }.onChange(of: viewModel.imageSelection) { newValue in
-                            guard let newValue else { return }
-                            Task {
-                                await loadImage(from: newValue)
-                            }
+                    PhotosPicker(selection: $viewModel.imageSelection,
+                                 matching: .any(of: [.images, .not(.screenshots)]),
+                                 preferredItemEncoding: .current,
+                                 photoLibrary: .shared()) {
+                        GalleryThumbnail(image: $imageState.uiImage)
+                    }.onChange(of: viewModel.imageSelection) { newValue in
+                        guard let newValue else { return }
+                        Task {
+                            await loadImage(from: newValue)
                         }
+                    }
+                    
+                    Spacer()
                         
-                        Spacer()
-                        
+                    if !isLiveDetectionFlow {
                         ShutterButton(action: {
                             isLoadingImage = true
                             DispatchQueue.global(qos: .background).async {
                                 do {
-                                    model.captureImage { _ in
-                                        if let image = model.capturedImage {
+                                    model.captureImage { uiImage in
+                                        if let image = uiImage {
                                             DispatchQueue.main.async {
                                                 imageState.setUIImage(image)
                                                 isLoadingImage = false
                                                 showingPhotoReview = true
+                                                print("CameraLiveView: Image captured and UI updated")
+                                            }
+                                        } else {
+                                            DispatchQueue.main.async {
+                                                isLoadingImage = false
+                                                print("CameraLiveView: Failed to capture image")
                                             }
                                         }
                                     }
                                 }
                             }
-                            
                         })
-                        
-                        Spacer()
                     }
+                    Spacer()
                     CameraSwitchButton(action: {
                         model.switchCamera()
                     })
                     
-                }.padding(.horizontal, 25)
+                }.padding(.horizontal)
             }
             .alert(isPresented: $model.showAlertError) {
                 Alert(
@@ -120,7 +127,7 @@ struct CameraLiveView: View {
             }
             .overlay {
                 if isLoadingImage {
-                    Color.black.opacity(0.5).ignoresSafeArea()
+                    Color.black.opacity(0.8).ignoresSafeArea()
                     ProgressView("Se încarcă imaginea...")
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(1.2)
@@ -133,7 +140,6 @@ struct CameraLiveView: View {
                         PhotoReview(image: uiImage, isPresented: self.$showingPhotoReview)
                     }
                 }
-                
             }
         }
         .navigationTitle("Capturează o imagine")
@@ -179,5 +185,37 @@ class ImageState: ObservableObject {
     func setCGImage(_ image: CGImage) {
         self.cgImage = image
         self.uiImage = UIImage(cgImage: image)
+    }
+}
+
+struct OverlayView: View {
+    @Binding var predictions: [CustomMLModel.Prediction]
+    @Binding var selectedItems: Set<UUID>
+
+    var body: some View {
+        GeometryReader { geometry in
+            ForEach(predictions.indices, id: \.self) { index in
+                let prediction = predictions[index]
+
+                if let boundingBox = prediction.boundingBox {
+                    let x = boundingBox.origin.x * geometry.size.width
+                    let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
+                    let width = boundingBox.size.width * geometry.size.width
+                    let height = boundingBox.size.height * geometry.size.height
+
+                    Rectangle()
+                        .stroke(Color(hue: Double(index) / Double(predictions.count), saturation: 1, brightness: 1), lineWidth: 2)
+                        .frame(width: width, height: height)
+                        .position(x: x + width / 2, y: y + height / 2)
+
+                    Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
+                        .foregroundColor(.white)
+                        .padding(2)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(10)
+                        .position(x: x + width / 2, y: y + height)
+                }
+            }
+        }
     }
 }
