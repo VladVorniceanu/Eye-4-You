@@ -73,7 +73,7 @@ struct MLAnalysisView: View {
         let mlModel = CustomMLModel.shared
         DispatchQueue.global(qos: .background).async {
             do {
-                try mlModel.makePredictions(for: image) { predictions in
+                try mlModel.makePredictionsUsingYOLOAndMobileNet(for: image) { predictions in
                     DispatchQueue.main.async {
                         if let predictions = predictions {
                             self.prediction = predictions

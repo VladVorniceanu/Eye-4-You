@@ -18,7 +18,7 @@ enum Status {
     case failed
 }
 
-class CameraManager: NSObject, ObservableObject {
+class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published var isLiveDetectionFlow: Bool = false
     @Published private var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var status = Status.unconfigured
@@ -238,40 +238,6 @@ class CameraManager: NSObject, ObservableObject {
             } else {
                 print("CameraManager: cameraDelegate is nil")
                 completion(nil)
-            }
-        }
-    }
-}
-//MARK: - Extension for CameraManager to handle video output
-extension CameraManager: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        
-        if !isLiveDetectionFlow {
-            return
-        }
-        
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let context = CIContext(options: nil)
-        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
-        let uiImage = UIImage(cgImage: cgImage)
-        
-        DispatchQueue.global(qos: .background).async {
-            do {
-                try self.customMLModel.makePredictions(on: pixelBuffer) { predictions in
-                    DispatchQueue.main.async {
-                        if let predictions = predictions {
-                            self.predictions = predictions
-                            self.analysisError = nil
-                        } else {
-                            self.analysisError = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
-                        }
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.analysisError = error
-                }
             }
         }
     }

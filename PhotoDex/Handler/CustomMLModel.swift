@@ -11,14 +11,13 @@ import Vision
 import UIKit
 
 class CustomMLModel : ObservableObject {
-    static let shared = CustomMLModel() // Singleton instance
-
+    // MARK: - Properties
+    static let shared = CustomMLModel()
     static let yoloModel = createYOLOModel()
     static let mobileNetModel = createMobileNetModel()
     private var predictionHandlers = [VNRequest: ImagePredictionHandler]()
-
-    typealias ImagePredictionHandler = (_ predictions: [Prediction]?) -> Void
-
+    typealias ImagePredictionHandler = ([Prediction]?) -> Void
+    
     // MARK: - Prediction Structure
     struct Prediction: Equatable, Hashable, Identifiable {
         let id = UUID()
@@ -37,7 +36,7 @@ class CustomMLModel : ObservableObject {
         }
     }
 
-    // MARK: - Creating the Models
+    // MARK: - Core ML Model Creation
     private static func createYOLOModel() -> VNCoreMLModel {
         let defaultConfiguration = MLModelConfiguration()
         guard let yoloModel = try? yolov5s(configuration: defaultConfiguration).model else {
@@ -60,130 +59,168 @@ class CustomMLModel : ObservableObject {
         return mobileNetVisionModel
     }
 
-    // MARK: - Making Predictions
-    func makePredictions(for photo: UIImage, completionHandler: @escaping ImagePredictionHandler) throws {
+    // MARK: - Making Predictions Using YOLO Only (Live Camera Feed)
+    func makePredictionsUsingYOLO(for image: UIImage, completionHandler: @escaping ImagePredictionHandler) {
+        guard let cvPixelBuffer = convertToCVPixelBuffer(toConvert: image) else {
+            completionHandler(nil)
+            return
+        }
+        
         let yoloRequest = createYOLOAnalysisRequest()
-
+        
         predictionHandlers[yoloRequest] = { yoloPredictions in
             guard let yoloPredictions = yoloPredictions else {
                 completionHandler(nil)
                 return
             }
-
-            self.handleYOLOPredictions(yoloPredictions: yoloPredictions, photo: photo, completionHandler: completionHandler)
+            
+            let predictions = yoloPredictions.map { prediction in
+                return Prediction(label: prediction.label, confidence: prediction.confidence, boundingBox: prediction.boundingBox)
+            }
+            
+            completionHandler(predictions)
         }
-
-        guard let cvPixelBufferPhoto = convertToCVPixelBuffer(toConvert: photo) else { return }
-        let handler = VNImageRequestHandler(cvPixelBuffer: cvPixelBufferPhoto)
+        
+        let handler = VNImageRequestHandler(cvPixelBuffer: cvPixelBuffer, options: [:])
         let requests: [VNRequest] = [yoloRequest]
-
-        try handler.perform(requests)
+        
+        do {
+            try handler.perform(requests)
+        } catch {
+            print("Error performing YOLO request: \(error.localizedDescription)")
+            completionHandler(nil)
+        }
     }
-
+    
     private func createYOLOAnalysisRequest() -> VNCoreMLRequest {
         let yoloRequest = VNCoreMLRequest(model: CustomMLModel.yoloModel, completionHandler: visionRequestHandler)
         yoloRequest.imageCropAndScaleOption = .scaleFill
         return yoloRequest
     }
-
-    private func visionRequestHandler(_ request: VNRequest, error: Error?) {
+    
+    private func visionRequestHandler(request: VNRequest, error: Error?) {
         guard let predictionHandler = predictionHandlers.removeValue(forKey: request) else {
             fatalError("Every request must have a prediction handler.")
         }
-        var predictions: [Prediction]? = nil
+        var predictions: [VNRecognizedObjectObservation]? = nil
         defer {
-            predictionHandler(predictions)
+            predictionHandler(predictions?.map { observation in
+                return Prediction(label: observation.labels.first?.identifier ?? "Unknown",
+                                  confidence: observation.confidence,
+                                  boundingBox: observation.boundingBox)
+            })
         }
+        
         if let error = error {
-            print("Vision image classification error...\n\n\(error.localizedDescription)")
+            print("Vision request error: \(error.localizedDescription)")
             return
         }
-        if request.results == nil {
-            print("Vision request had no results.")
+        
+        guard let results = request.results as? [VNRecognizedObjectObservation] else {
+            print("No results from Vision request")
             return
         }
-        guard let results = request.results as? [VNRecognizedObjectObservation] else { return }
-        predictions = results.filter({ observation in
-            observation.confidence >= 0.51
-        }).map({ result in
-            guard let label = result.labels.first?.identifier else { return Prediction(label: "", confidence: VNConfidence.zero, boundingBox: .zero)}
-            let confidence = result.labels.first?.confidence ?? 0.0
-            let boundingBox = result.boundingBox
-            let predictedObject: Prediction = Prediction(label: label, confidence: confidence, boundingBox: boundingBox)
-            return predictedObject
-        })
+        
+        predictions = results
     }
 
-    private func handleYOLOPredictions(yoloPredictions: [Prediction], photo: UIImage, completionHandler: @escaping ImagePredictionHandler) {
+    // MARK: - Making Predictions Using YOLO and MobileNetV2 (Standalone Picture)
+    func makePredictionsUsingYOLOAndMobileNet(for image: UIImage, completionHandler: @escaping ImagePredictionHandler) {
+        guard let cvPixelBufferPhoto = convertToCVPixelBuffer(toConvert: image) else {
+            completionHandler(nil)
+            return
+        }
+        
+        let yoloRequest = createYOLOAnalysisRequest()
+        
+        predictionHandlers[yoloRequest] = { yoloPredictions in
+            guard let yoloPredictions = yoloPredictions else {
+                completionHandler(nil)
+                return
+            }
+            
+            self.handleYOLOPredictions(yoloPredictions: yoloPredictions, image: image, completionHandler: completionHandler)
+        }
+        
+        let handler = VNImageRequestHandler(cvPixelBuffer: cvPixelBufferPhoto, options: [:])
+        let requests: [VNRequest] = [yoloRequest]
+        
+        do {
+            try handler.perform(requests)
+        } catch {
+            print("Error performing YOLO request: \(error.localizedDescription)")
+            completionHandler(nil)
+        }
+    }
+    
+    private func handleYOLOPredictions(yoloPredictions: [Prediction], image: UIImage, completionHandler: @escaping ImagePredictionHandler) {
         var finalPredictions: [Prediction] = []
-
+        
         let group = DispatchGroup()
-
+        
         for yoloPrediction in yoloPredictions {
             group.enter()
+            
             guard let boundingBox = yoloPrediction.boundingBox else {
-                print("Bounding box not found for YOLO prediction.")
+                print("Bounding box not found for YOLO prediction")
                 group.leave()
                 continue
             }
-
-            let croppedImage = cropImage(image: photo, boundingBox: boundingBox)
-
+            
+            let croppedImage = cropImage(image: image, boundingBox: boundingBox)
+            
             do {
                 try makeMobileNetPrediction(for: croppedImage) { mobileNetPredictions in
-                    if let mobileNetPredictions = mobileNetPredictions, let firstMobileNetPrediction = mobileNetPredictions.first {
-                        // Create a copy of the YOLO prediction to modify it
+                    if let mobileNetPrediction = mobileNetPredictions?.first {
                         var finalPrediction = yoloPrediction
-                        finalPrediction.label = firstMobileNetPrediction.label
-                        finalPrediction.confidence = firstMobileNetPrediction.confidence
+                        finalPrediction.label = mobileNetPrediction.label
+                        finalPrediction.confidence = mobileNetPrediction.confidence
                         finalPredictions.append(finalPrediction)
                     } else {
-                        // Handle case where mobileNetPredictions is nil
-                        // For now, append yoloPrediction as is
                         finalPredictions.append(yoloPrediction)
                     }
                     group.leave()
                 }
             } catch {
-                print("Error making MobileNet prediction: \(error)")
+                print("Error making MobileNet prediction: \(error.localizedDescription)")
                 group.leave()
             }
         }
-
+        
         group.notify(queue: .main) {
             completionHandler(finalPredictions)
         }
     }
-
+    
     private func makeMobileNetPrediction(for photo: UIImage, completionHandler: @escaping ImagePredictionHandler) throws {
         let mobileNetRequest = createMobileNetAnalysisRequest()
-
+        
         predictionHandlers[mobileNetRequest] = { mobileNetPredictions in
-            if let mobileNetPredictions = mobileNetPredictions, let mobileNetPrediction = mobileNetPredictions.first {
-                completionHandler([Prediction(label: mobileNetPrediction.label,
-                                               confidence: mobileNetPrediction.confidence,
-                                               boundingBox: nil, contourPath: nil, isSelected: false)])
-            } else {
-                completionHandler(nil)
-            }
+            completionHandler(mobileNetPredictions)
         }
-
+        
         guard let cvPixelBufferPhoto = convertToCVPixelBuffer(toConvert: photo) else {
             throw NSError(domain: "CustomMLModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to pixel buffer"])
         }
-
-        let handler = VNImageRequestHandler(cvPixelBuffer: cvPixelBufferPhoto)
+        
+        let handler = VNImageRequestHandler(cvPixelBuffer: cvPixelBufferPhoto, options: [:])
         let requests: [VNRequest] = [mobileNetRequest]
-
-        try handler.perform(requests)
+        
+        do {
+            try handler.perform(requests)
+        } catch {
+            print("Error performing MobileNet request: \(error.localizedDescription)")
+            completionHandler(nil)
+        }
     }
-
+    
     private func createMobileNetAnalysisRequest() -> VNCoreMLRequest {
         let mobileNetRequest = VNCoreMLRequest(model: CustomMLModel.mobileNetModel, completionHandler: visionRequestHandler)
         mobileNetRequest.imageCropAndScaleOption = .scaleFill
         return mobileNetRequest
     }
-
+    
+    // MARK: - Utility Methods
     func convertToCVPixelBuffer(toConvert: UIImage) -> CVPixelBuffer? {
         let attributes = [kCVPixelBufferCGImageCompatibilityKey: kCFBooleanTrue, kCVPixelBufferCGBitmapContextCompatibilityKey: kCFBooleanTrue] as CFDictionary
         var pixelBuffer: CVPixelBuffer?
@@ -242,38 +279,5 @@ class CustomMLModel : ObservableObject {
         path.close()
         return path
     }
-    // Function to make real-time predictions on CVPixelBuffer
-    func makePredictions(on pixelBuffer: CVPixelBuffer, completionHandler: @escaping ImagePredictionHandler) {
-        let yoloRequest = VNCoreMLRequest(model: CustomMLModel.yoloModel) { (request, error) in
-            self.visionRequestHandler(request, error: error)
-        }
-        yoloRequest.imageCropAndScaleOption = .scaleFill
-
-        predictionHandlers[yoloRequest] = { yoloPredictions in
-            guard let yoloPredictions = yoloPredictions else {
-                completionHandler(nil)
-                return
-            }
-
-            let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-            let context = CIContext()
-            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
-                completionHandler(nil)
-                return
-            }
-            let image = UIImage(cgImage: cgImage)
-
-            self.handleYOLOPredictions(yoloPredictions: yoloPredictions, photo: image, completionHandler: completionHandler)
-        }
-
-        let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:])
-        DispatchQueue.global(qos: .userInitiated).async {
-            do {
-                try handler.perform([yoloRequest])
-            } catch {
-                print("Failed to perform request: \(error)")
-                completionHandler(nil)
-            }
-        }
-    }
 }
+

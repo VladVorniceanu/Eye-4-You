@@ -76,26 +76,53 @@ struct FrameView: UIViewRepresentable {
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
             let context = CIContext(options: nil)
             guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
-            let uiImage = UIImage(cgImage: cgImage)
+            var uiImage = UIImage(cgImage: cgImage).rotated(byDegrees: 90)!
             
-            DispatchQueue.global(qos: .background).async {
-                do {
-                    try self.mlModel.makePredictions(for: uiImage) { predictions in
-                        DispatchQueue.main.async {
-                            if let predictions = predictions {
-                                self.parent.predictions = predictions
-                            } else {
-                                self.parent.analysisError = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
-                            }
-                        }
-                    }
-                } catch {
+
+            DispatchQueue.global().async {
+                self.mlModel.makePredictionsUsingYOLO(for: uiImage) { predictions in
                     DispatchQueue.main.async {
-                        self.parent.analysisError = error
+                        if let predictions = predictions {
+                            self.parent.predictions = predictions
+                        } else {
+                            self.parent.analysisError = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
+                        }
                     }
                 }
             }
         }
     }
 }
+import UIKit
+
+extension UIImage {
+    func rotated(byDegrees degrees: CGFloat) -> UIImage? {
+        // Convert degrees to radians
+        let radians = degrees * CGFloat.pi / 180
+        
+        // Calculate the size of the rotated image's bounding box
+        let rotatedRect = CGRect(origin: .zero, size: size)
+            .applying(CGAffineTransform(rotationAngle: radians))
+        
+        // Create a context to draw the rotated image
+        UIGraphicsBeginImageContext(rotatedRect.size)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+        
+        // Move the origin to the middle of the image so it rotates around the center
+        context.translateBy(x: rotatedRect.width / 2, y: rotatedRect.height / 2)
+        
+        // Rotate the image
+        context.rotate(by: radians)
+        
+        // Draw the image in the context
+        self.draw(in: CGRect(x: -self.size.width / 2, y: -self.size.height / 2, width: self.size.width, height: self.size.height))
+        
+        // Get the rotated image from the context
+        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        
+        return rotatedImage
+    }
+}
+
 
