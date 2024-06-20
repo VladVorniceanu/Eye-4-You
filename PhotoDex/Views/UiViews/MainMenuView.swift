@@ -11,11 +11,8 @@ import PhotosUI
 struct MainMenuView: View {
     @StateObject private var viewModel = PhotoPicker()
     @StateObject private var customMLModel = CustomMLModel.shared
-    @State private var isLoadingModels = true
+    @State private var modelsLoaded = false
     @State private var isLoadingImage = false
-    
-    
-    private var hasAppeared = false;
     
     var body: some View {
         NavigationStack {
@@ -23,24 +20,23 @@ struct MainMenuView: View {
                 Text("PhotoDex")
                     .font(.largeTitle)
                     .padding()
-                    .animation(.bouncy, value: isLoadingModels)
                 
                 NavigationStack {
-                    
                     NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: true)) {
                         Text("Detectează obiecte LIVE")
                             .padding()
                             .background(Color.blue)
                             .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/, style: .continuous))
-                    }.selectionDisabled(isLoadingModels == true)
+                            .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                    }.opacity(modelsLoaded ? 1.0 : 0.5)
+                        .disabled(!modelsLoaded)
                     
                     NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: false)) {
                         Text("Capturează o poză")
                             .padding()
                             .background(Color.blue)
                             .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                     }
                     
                     PhotosPicker(selection: $viewModel.imageSelection,
@@ -51,9 +47,9 @@ struct MainMenuView: View {
                             .padding()
                             .background(Color.blue)
                             .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/, style: .continuous))
+                            .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                     }.onChange(of: viewModel.imageSelection) { newValue in
-                        guard let newValue else { return }
+                        guard let newValue = newValue else { return }
                         Task {
                             await loadImage(from: newValue)
                         }
@@ -62,9 +58,7 @@ struct MainMenuView: View {
             }
         }
         .onAppear {
-            DispatchQueue.global(qos: .background).async {
-                isLoadingModels = !(CustomMLModel.yoloModel != nil && CustomMLModel.mobileNetModel != nil)
-            }
+            initializeModels()
         }
         .overlay {
             if isLoadingImage {
@@ -83,6 +77,16 @@ struct MainMenuView: View {
             }
         }
     }
+    
+    func initializeModels() {
+        DispatchQueue.global(qos: .background).async {
+            CustomMLModel.initializeModels()
+            DispatchQueue.main.async {
+                modelsLoaded = (CustomMLModel.yoloModel != nil && CustomMLModel.mobileNetModel != nil)
+            }
+        }
+    }
+    
     func loadImage(from selection: PhotosPickerItem) async {
         DispatchQueue.main.async {
             self.isLoadingImage = true
@@ -104,9 +108,10 @@ struct MainMenuView: View {
             }
         }
     }
-
 }
 
-#Preview {
-    MainMenuView()
+struct MainMenuView_Previews: PreviewProvider {
+    static var previews: some View {
+        MainMenuView()
+    }
 }

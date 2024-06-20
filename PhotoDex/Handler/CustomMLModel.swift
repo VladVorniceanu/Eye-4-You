@@ -13,8 +13,8 @@ import UIKit
 class CustomMLModel : ObservableObject {
     // MARK: - Properties
     static let shared = CustomMLModel()
-    static let yoloModel = createYOLOModel()
-    static let mobileNetModel = createMobileNetModel()
+    static var yoloModel: VNCoreMLModel!
+    static var mobileNetModel: VNCoreMLModel!
     private var predictionHandlers = [VNRequest: ImagePredictionHandler]()
     typealias ImagePredictionHandler = ([Prediction]?) -> Void
     
@@ -34,6 +34,12 @@ class CustomMLModel : ObservableObject {
         func hash(into hasher: inout Hasher) {
             hasher.combine(id)
         }
+    }
+    
+    // MARK: - Initialization
+    static func initializeModels() {
+        yoloModel = createYOLOModel()
+        mobileNetModel = createMobileNetModel()
     }
 
     // MARK: - Core ML Model Creation
