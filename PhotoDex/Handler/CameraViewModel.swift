@@ -11,19 +11,18 @@ import Photos
 import AVFoundation
 
 class CameraViewModel : ObservableObject {
-    
+    //MARK: - Variables declaration
     @ObservedObject var cameraManager = CameraManager()
+    var session: AVCaptureSession = .init()
+    private var cancelables = Set<AnyCancellable>()
     @Published var isFlashOn = false
     @Published var showAlertError = false
     @Published var showSettingAlert = false
     @Published var isPermissionGranted: Bool = false
     @Published var capturedImage: UIImage?
-    
     var alertError: AlertError!
-    var session: AVCaptureSession = .init()
     
-    private var cancelables = Set<AnyCancellable>()
-    
+    //MARK: - Initialiser and deinitialiser
     init() {
         session = cameraManager.session
     }
@@ -32,6 +31,7 @@ class CameraViewModel : ObservableObject {
         cameraManager.stopCapturing()
     }
     
+    //MARK: - Configuration Setup
     func setupBindings() {
         cameraManager.$shouldShowAlertView.sink { [weak self] value in
             DispatchQueue.main.async {
@@ -48,23 +48,12 @@ class CameraViewModel : ObservableObject {
         }.store(in: &cancelables)
     }
     
-    func requestCameraPermission() {
-        AVCaptureDevice.requestAccess(for: .video) { [weak self] isGranted in
-            guard let self else { return }
-            if isGranted {
-                self.configureCamera()
-                DispatchQueue.main.async {
-                    self.isPermissionGranted = true
-                }
-            }
-        }
-    }
-    
     func configureCamera() {
         checkForDevicePermission()
         cameraManager.setUpCaptureSession()
     }
     
+    //MARK: - Permission Requests
     func checkForDevicePermission() {
         let videoStatus = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
         DispatchQueue.main.async {
@@ -81,6 +70,42 @@ class CameraViewModel : ObservableObject {
         requestGalleryPermission()
     }
     
+    func requestGalleryPermission() {
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+            switch status {
+            case .authorized:
+                break
+            case .denied:
+                DispatchQueue.main.async {
+                    self.showSettingAlert = true
+                }
+            default:
+                break
+            }
+        }
+    }
+    
+    func checkGalleryPermissionStatus() -> PHAuthorizationStatus {
+       return PHPhotoLibrary.authorizationStatus()
+    }
+    
+    func requestCameraPermission() {
+        AVCaptureDevice.requestAccess(for: .video) { [weak self] isGranted in
+            guard let self = self else { return }
+            if isGranted {
+                DispatchQueue.main.async {
+                    self.isPermissionGranted = true
+                    self.configureCamera()
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.showSettingAlert = true
+                }
+            }
+        }
+    }
+    
+    //MARK: - Functional Methods
     func switchFlash() {
         isFlashOn.toggle()
         cameraManager.toggleTorch(torchIsOn: isFlashOn)
@@ -100,21 +125,5 @@ class CameraViewModel : ObservableObject {
         if permission.rawValue != 2 {
             cameraManager.captureImage(completion: completion)
         }
-    }
-    
-    func requestGalleryPermission() {
-        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-            switch status {
-                case .authorized:
-                    break
-                case .denied:
-                    self.showSettingAlert = true
-                default:
-                    break
-            }
-        }
-    }
-    func checkGalleryPermissionStatus() -> PHAuthorizationStatus {
-       return PHPhotoLibrary.authorizationStatus()
     }
 }

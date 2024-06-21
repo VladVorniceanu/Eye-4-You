@@ -1,4 +1,3 @@
-//
 //  FrameView.swift
 //  PhotoDex
 //
@@ -49,7 +48,6 @@ struct FrameView: UIViewRepresentable {
     
     class Coordinator: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
         var parent: FrameView
-        private let mlModel = CustomMLModel.shared
         
         init(parent: FrameView) {
             self.parent = parent
@@ -76,16 +74,18 @@ struct FrameView: UIViewRepresentable {
             let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
             let context = CIContext(options: nil)
             guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
-            var uiImage = UIImage(cgImage: cgImage).rotated(byDegrees: 90)!
+            let uiImage = UIImage(cgImage: cgImage).rotated(byDegrees: 90)!
             
-
             DispatchQueue.global().async {
-                self.mlModel.makePredictionsUsingYOLO(for: uiImage) { predictions in
+                YoloCoreML.makePredictionsUsingYOLO(for: uiImage, model: CustomMLModel.yoloModel) { result in
                     DispatchQueue.main.async {
-                        if let predictions = predictions {
+                        switch result {
+                        case .success(let predictions):
+//                            print("YOLO Live Predictions: \(predictions)")
                             self.parent.predictions = predictions
-                        } else {
-                            self.parent.analysisError = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
+                        case .failure(let error):
+                            self.parent.analysisError = error
+                            print("YOLO Live Analysis Error: \(error.localizedDescription)")
                         }
                     }
                 }
@@ -93,6 +93,8 @@ struct FrameView: UIViewRepresentable {
         }
     }
 }
+
+// Extensie pentru rotirea unei imagini
 import UIKit
 
 extension UIImage {
@@ -124,5 +126,3 @@ extension UIImage {
         return rotatedImage
     }
 }
-
-
