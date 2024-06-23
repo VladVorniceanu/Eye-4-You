@@ -48,10 +48,10 @@ struct MainMenuView: View {
                             .background(Color.blue)
                             .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                    }.onChange(of: viewModel.imageSelection) { newValue in
-                        guard let newValue = newValue else { return }
+                    }
+                    .onChange(of: viewModel.imageSelection) { _ in
                         Task {
-                            await loadImage(from: newValue)
+                            await loadImage()
                         }
                     }
                 }
@@ -70,7 +70,7 @@ struct MainMenuView: View {
             }
         }
         .sheet(isPresented: $viewModel.isImageSelected) {
-            NavigationView{
+            NavigationView {
                 if let selectedImage = viewModel.selectedImage {
                     PhotoReview(image: selectedImage, isPresented: $viewModel.isImageSelected)
                 }
@@ -87,24 +87,26 @@ struct MainMenuView: View {
         }
     }
     
-    func loadImage(from selection: PhotosPickerItem) async {
+    func loadImage() async {
         DispatchQueue.main.async {
             self.isLoadingImage = true
         }
-        do {
-            if let data = try await selection.loadTransferable(type: Data.self) {
-                if let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        viewModel.selectedImage = image
-                        viewModel.isImageSelected = true
-                        self.isLoadingImage = false
+        if let imageSelection = viewModel.imageSelection {
+            do {
+                if let data = try await imageSelection.loadTransferable(type: Data.self) {
+                    if let image = UIImage(data: data) {
+                        DispatchQueue.main.async {
+                            viewModel.selectedImage = image
+                            viewModel.isImageSelected = true
+                            self.isLoadingImage = false
+                        }
                     }
                 }
-            }
-        } catch {
-            print("Error loading image: \(error.localizedDescription)")
-            DispatchQueue.main.async {
-                self.isLoadingImage = false
+            } catch {
+                print("Error loading image: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.isLoadingImage = false
+                }
             }
         }
     }

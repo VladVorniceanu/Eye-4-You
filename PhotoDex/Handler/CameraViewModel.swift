@@ -20,6 +20,7 @@ class CameraViewModel : ObservableObject {
     @Published var showSettingAlert = false
     @Published var isPermissionGranted: Bool = false
     @Published var capturedImage: UIImage?
+    @Published var isLiveDetectionRunning = false
     var alertError: AlertError!
     
     //MARK: - Initialiser and deinitialiser
@@ -49,61 +50,33 @@ class CameraViewModel : ObservableObject {
     }
     
     func configureCamera() {
-        checkForDevicePermission()
+        checkAndRequestPermissions()
         cameraManager.setUpCaptureSession()
     }
     
     //MARK: - Permission Requests
-    func checkForDevicePermission() {
-        let videoStatus = AVCaptureDevice.authorizationStatus(for: AVMediaType.video)
-        DispatchQueue.main.async {
-            if videoStatus == .authorized {
-                self.isPermissionGranted = true
-                self.cameraManager.setUpCaptureSession()
-            } else if videoStatus == .notDetermined {
-                AVCaptureDevice.requestAccess(for: .video, completionHandler: {_ in})
-            } else if videoStatus == .denied {
-                self.isPermissionGranted = false
-                self.showSettingAlert = true
-            }
-        }
-        requestGalleryPermission()
-    }
-    
-    func requestGalleryPermission() {
-        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-            switch status {
-            case .authorized:
-                break
-            case .denied:
+    func checkAndRequestPermissions() {
+            PermissionsManager.shared.checkAndRequestCameraPermission { [weak self] granted in
+                guard let self = self else { return }
                 DispatchQueue.main.async {
-                    self.showSettingAlert = true
+                    if granted {
+                        self.isPermissionGranted = true
+                        self.cameraManager.setUpCaptureSession()
+                    } else {
+                        self.showSettingAlert = true
+                    }
                 }
-            default:
-                break
             }
-        }
-    }
-    
-    func checkGalleryPermissionStatus() -> PHAuthorizationStatus {
-       return PHPhotoLibrary.authorizationStatus()
-    }
-    
-    func requestCameraPermission() {
-        AVCaptureDevice.requestAccess(for: .video) { [weak self] isGranted in
-            guard let self = self else { return }
-            if isGranted {
+
+            PermissionsManager.shared.checkAndRequestGalleryPermission { [weak self] granted in
+                guard let self = self else { return }
                 DispatchQueue.main.async {
-                    self.isPermissionGranted = true
-                    self.configureCamera()
-                }
-            } else {
-                DispatchQueue.main.async {
-                    self.showSettingAlert = true
+                    if !granted {
+                        self.showSettingAlert = true
+                    }
                 }
             }
         }
-    }
     
     //MARK: - Functional Methods
     func switchFlash() {
@@ -119,9 +92,16 @@ class CameraViewModel : ObservableObject {
         cameraManager.position = cameraManager.position == .back ? .front : .back
         cameraManager.switchCamera()
     }
+    
+    func toggleLiveDetection() {
+        DispatchQueue.main.async {
+            self.isLiveDetectionRunning.toggle()
+            self.cameraManager.isLiveDetectionFlow = self.isLiveDetectionRunning
+        }
+    }
       
     func captureImage(completion: @escaping (UIImage?) -> Void) {
-        let permission = checkGalleryPermissionStatus()
+        let permission = PermissionsManager.shared.checkGalleryPermissionStatus()
         if permission.rawValue != 2 {
             cameraManager.captureImage(completion: completion)
         }

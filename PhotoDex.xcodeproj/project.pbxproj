@@ -31,6 +31,11 @@
 		34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F172C25828600FA4717 /* SideMenuPredictions.swift */; };
 		34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F192C25A8D700FA4717 /* YoloCoreML.swift */; };
 		34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */; };
+		34A71F1E2C2728A300FA4717 /* PermissionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */; };
+		34A71F202C272B8000FA4717 /* UIImage+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1F2C272B8000FA4717 /* UIImage+Extension.swift */; };
+		34A71F222C27343400FA4717 /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F212C27343400FA4717 /* OverlayView.swift */; };
+		34A71F242C27347000FA4717 /* ImageState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F232C27347000FA4717 /* ImageState.swift */; };
+		34A71F262C2737A800FA4717 /* LiveDetectSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F252C2737A800FA4717 /* LiveDetectSwitch.swift */; };
 		34F32C452C1A4295008B279A /* ObjectDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34F32C442C1A4295008B279A /* ObjectDetector.swift */; };
 		34F4183D2BCFAF2200DD9A25 /* YOLOv3.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 34F4183C2BCFAF2200DD9A25 /* YOLOv3.mlpackage */; };
 /* End PBXBuildFile section */
@@ -61,6 +66,11 @@
 		34A71F172C25828600FA4717 /* SideMenuPredictions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuPredictions.swift; sourceTree = "<group>"; };
 		34A71F192C25A8D700FA4717 /* YoloCoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YoloCoreML.swift; sourceTree = "<group>"; };
 		34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileNetV2CoreML.swift; sourceTree = "<group>"; };
+		34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionsManager.swift; sourceTree = "<group>"; };
+		34A71F1F2C272B8000FA4717 /* UIImage+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Extension.swift"; sourceTree = "<group>"; };
+		34A71F212C27343400FA4717 /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
+		34A71F232C27347000FA4717 /* ImageState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageState.swift; sourceTree = "<group>"; };
+		34A71F252C2737A800FA4717 /* LiveDetectSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveDetectSwitch.swift; sourceTree = "<group>"; };
 		34F32C442C1A4295008B279A /* ObjectDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectDetector.swift; sourceTree = "<group>"; };
 		34F4183C2BCFAF2200DD9A25 /* YOLOv3.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = YOLOv3.mlpackage; path = MLModels/YOLOv3.mlpackage; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -81,6 +91,8 @@
 			children = (
 				348197AD2B9F818A008E5F76 /* FrameView.swift */,
 				3405BF042BC820DC00CE302F /* CameraSwitchButton.swift */,
+				34A71F252C2737A800FA4717 /* LiveDetectSwitch.swift */,
+				34A71F212C27343400FA4717 /* OverlayView.swift */,
 				3405BF002BC81EB100CE302F /* ShutterButton.swift */,
 				3405BF062BC8215700CE302F /* FocusView.swift */,
 				3405BF0A2BC82F7F00CE302F /* FlashButton.swift */,
@@ -117,11 +129,14 @@
 				348197AF2B9F8259008E5F76 /* CameraManager.swift */,
 				3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */,
 				342AE5302C22E0BD001B4D9D /* PhotoPicker.swift */,
+				34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */,
 				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
 				3405BF192BCAD84300CE302F /* CustomMLModel.swift */,
 				34A71F192C25A8D700FA4717 /* YoloCoreML.swift */,
 				34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */,
 				34F32C442C1A4295008B279A /* ObjectDetector.swift */,
+				34A71F1F2C272B8000FA4717 /* UIImage+Extension.swift */,
+				34A71F232C27347000FA4717 /* ImageState.swift */,
 			);
 			path = Handler;
 			sourceTree = "<group>";
@@ -235,11 +250,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34A71F1E2C2728A300FA4717 /* PermissionsManager.swift in Sources */,
+				34A71F222C27343400FA4717 /* OverlayView.swift in Sources */,
 				3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */,
 				3405BF012BC81EB100CE302F /* ShutterButton.swift in Sources */,
 				3405BF052BC820DC00CE302F /* CameraSwitchButton.swift in Sources */,
 				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
 				34650CC02BD8F44100A1CB90 /* yolov5s.mlmodel in Sources */,
+				34A71F242C27347000FA4717 /* ImageState.swift in Sources */,
 				34F32C452C1A4295008B279A /* ObjectDetector.swift in Sources */,
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
@@ -247,6 +265,7 @@
 				3405BF1A2BCAD84300CE302F /* CustomMLModel.swift in Sources */,
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,
 				3405BF0B2BC82F7F00CE302F /* FlashButton.swift in Sources */,
+				34A71F202C272B8000FA4717 /* UIImage+Extension.swift in Sources */,
 				3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */,
 				3405BF072BC8215700CE302F /* FocusView.swift in Sources */,
 				342AE5312C22E0BD001B4D9D /* PhotoPicker.swift in Sources */,
@@ -254,6 +273,7 @@
 				34F4183D2BCFAF2200DD9A25 /* YOLOv3.mlpackage in Sources */,
 				34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */,
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
+				34A71F262C2737A800FA4717 /* LiveDetectSwitch.swift in Sources */,
 				34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */,
 				3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */,
 				34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */,

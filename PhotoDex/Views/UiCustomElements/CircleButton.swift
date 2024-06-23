@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+import SwiftUI
+
 struct CircleButton: View {
     var action: () -> Void
     var label: String
@@ -19,11 +21,12 @@ struct CircleButton: View {
                 .font(.custom("eu", size: 9))
                 .padding()
                 .frame(width: CGFloat(size), height: CGFloat(size))
-                .background(.quinary .opacity(/*@START_MENU_TOKEN@*/0.8/*@END_MENU_TOKEN@*/))
-                .clipShape(/*@START_MENU_TOKEN@*/Circle()/*@END_MENU_TOKEN@*/)
+                .background(.quinary.opacity(0.8))
+                .clipShape(Circle())
         }
     }
 }
+
 
 #Preview {
     VStack {

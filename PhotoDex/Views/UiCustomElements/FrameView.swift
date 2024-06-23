@@ -8,7 +8,7 @@ import SwiftUI
 import AVFoundation
 
 struct FrameView: UIViewRepresentable {
-    @State var isLiveDetectionFlow: Bool
+    @Binding var isLiveDetectionFlow: Bool
     let session: AVCaptureSession
     @Binding var predictions: [CustomMLModel.Prediction]
     @Binding var analysisError: Error?
@@ -81,7 +81,6 @@ struct FrameView: UIViewRepresentable {
                     DispatchQueue.main.async {
                         switch result {
                         case .success(let predictions):
-//                            print("YOLO Live Predictions: \(predictions)")
                             self.parent.predictions = predictions
                         case .failure(let error):
                             self.parent.analysisError = error
@@ -91,38 +90,5 @@ struct FrameView: UIViewRepresentable {
                 }
             }
         }
-    }
-}
-
-// Extensie pentru rotirea unei imagini
-import UIKit
-
-extension UIImage {
-    func rotated(byDegrees degrees: CGFloat) -> UIImage? {
-        // Convert degrees to radians
-        let radians = degrees * CGFloat.pi / 180
-        
-        // Calculate the size of the rotated image's bounding box
-        let rotatedRect = CGRect(origin: .zero, size: size)
-            .applying(CGAffineTransform(rotationAngle: radians))
-        
-        // Create a context to draw the rotated image
-        UIGraphicsBeginImageContext(rotatedRect.size)
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
-        
-        // Move the origin to the middle of the image so it rotates around the center
-        context.translateBy(x: rotatedRect.width / 2, y: rotatedRect.height / 2)
-        
-        // Rotate the image
-        context.rotate(by: radians)
-        
-        // Draw the image in the context
-        self.draw(in: CGRect(x: -self.size.width / 2, y: -self.size.height / 2, width: self.size.width, height: self.size.height))
-        
-        // Get the rotated image from the context
-        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        
-        return rotatedImage
     }
 }

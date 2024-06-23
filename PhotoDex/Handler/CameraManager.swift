@@ -271,4 +271,3 @@ public struct AlertError {
         self.secondaryAction = secondaryAction
     }
 }
-

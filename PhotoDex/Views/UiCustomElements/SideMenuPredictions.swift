@@ -5,7 +5,6 @@
 //  Created by Vlad Vorniceanu on 21.06.2024.
 //
 
-import Foundation
 import SwiftUI
 
 struct SideMenuPredictions: View {
@@ -49,7 +48,7 @@ struct SideMenuPredictions: View {
                     }
                     .listStyle(PlainListStyle())
                 }
-                .frame(width: geometry.size.width * 0.8) // 80% din lățimea ecranului
+                .frame(width: geometry.size.width * 0.8)
                 .background(Color.white)
                 .cornerRadius(10)
                 .shadow(radius: 10)

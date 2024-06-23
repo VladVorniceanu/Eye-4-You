@@ -74,9 +74,6 @@ struct MLAnalysisView: View {
                         .animation(.easeInOut, value: showDrawer)
                     }
                 }
-//                .alert(isPresented: $showAlert) {
-//                    Alert(title: Text("Informație"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-//                }
                 .gesture(
                     DragGesture(minimumDistance: 20)
                         .onEnded { value in
@@ -89,7 +86,6 @@ struct MLAnalysisView: View {
                 )
             }
             
-            // Drawer view
             if showDrawer {
                 SideMenuPredictions(isPresented: $showDrawer, predictions: $predictions, selectedItems: $selectedItems)
                     .transition(.move(edge: .trailing))
@@ -100,29 +96,22 @@ struct MLAnalysisView: View {
     private func performAnalysis() {
         let mlModel = CustomMLModel.shared
         DispatchQueue.global(qos: .background).async {
-            do {
-                try mlModel.makePredictionsUsingYOLOAndMobileNet(for: image) { predictions in
-                    DispatchQueue.main.async {
-                        if let predictions = predictions {
-                            self.predictions = predictions
-                            self.isAnalyzing = false
-                            if predictions.isEmpty {
-                                alertMessage = "Nu au fost detectate rezultate."
-                                showAlert = true
-                            } else {
-                                alertMessage = "Lista de predicții se găsește în meniul lateral din dreapta."
-                                showAlert = true
-                            }
-                        } else {
-                            self.analysisErrors = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
-                            self.isAnalyzing = false
-                        }
-                    }
-                }
-            } catch {
+            mlModel.makePredictionsUsingYOLOAndMobileNet(for: image) { predictions in
                 DispatchQueue.main.async {
-                    self.analysisErrors = error
-                    self.isAnalyzing = false
+                    if let predictions = predictions {
+                        self.predictions = predictions
+                        self.isAnalyzing = false
+                        if predictions.isEmpty {
+                            alertMessage = "Nu au fost detectate rezultate."
+                            showAlert = true
+                        } else {
+                            alertMessage = "Lista de predicții se găsește în meniul lateral din dreapta."
+                            showAlert = true
+                        }
+                    } else {
+                        self.analysisErrors = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
+                        self.isAnalyzing = false
+                    }
                 }
             }
         }

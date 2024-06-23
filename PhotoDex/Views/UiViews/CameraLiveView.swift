@@ -1,10 +1,3 @@
-//
-//  CameraLiveView.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 11.03.2024.
-//
-
 import SwiftUI
 import PhotosUI
 
@@ -32,7 +25,7 @@ struct CameraLiveView: View {
                 FlashButton(model: model)
                 
                 ZStack {
-                    FrameView(isLiveDetectionFlow: self.isLiveDetectionFlow, session: model.session, predictions: $predictions, analysisError: $analysisError) { tapPoint in
+                    FrameView(isLiveDetectionFlow: $model.isLiveDetectionRunning, session: model.session, predictions: $predictions, analysisError: $analysisError) { tapPoint in
                         isFocused = true
                         focusLocation = tapPoint
                         model.setFocus(point: tapPoint)
@@ -52,7 +45,9 @@ struct CameraLiveView: View {
                             }
                         }
                     }
-                    OverlayView(predictions: $predictions, selectedItems: $selectedItems)
+                    if model.isLiveDetectionRunning {
+                        OverlayView(predictions: $predictions, selectedItems: $selectedItems)
+                    }
                 }
                 
                 HStack {
@@ -61,10 +56,10 @@ struct CameraLiveView: View {
                                  preferredItemEncoding: .current,
                                  photoLibrary: .shared()) {
                         GalleryThumbnail(image: $imageState.uiImage)
-                    }.onChange(of: viewModel.imageSelection) { newValue in
-                        guard let newValue else { return }
+                    }
+                    .onChange(of: viewModel.imageSelection) { _ in
                         Task {
-                            await loadImage(from: newValue)
+                            await loadImage()
                         }
                     }
                     
@@ -74,27 +69,32 @@ struct CameraLiveView: View {
                         ShutterButton(action: {
                             isLoadingImage = true
                             DispatchQueue.global(qos: .background).async {
-                                do {
-                                    model.captureImage { uiImage in
-                                        if let image = uiImage {
-                                            DispatchQueue.main.async {
-                                                imageState.setUIImage(image)
-                                                isLoadingImage = false
-                                                showingPhotoReview = true
-                                                print("CameraLiveView: Image captured and UI updated")
-                                            }
-                                        } else {
-                                            DispatchQueue.main.async {
-                                                isLoadingImage = false
-                                                print("CameraLiveView: Failed to capture image")
-                                            }
+                                model.captureImage { uiImage in
+                                    if let image = uiImage {
+                                        DispatchQueue.main.async {
+                                            imageState.setUIImage(image)
+                                            isLoadingImage = false
+                                            showingPhotoReview = true
+                                            print("CameraLiveView: Image captured and UI updated")
+                                        }
+                                    } else {
+                                        DispatchQueue.main.async {
+                                            isLoadingImage = false
+                                            print("CameraLiveView: Failed to capture image")
                                         }
                                     }
                                 }
                             }
                         })
+                    } else {
+                        LiveDetectSwitch(action: {
+                            model.toggleLiveDetection()
+                            print("Live detection toggled: \(model.isLiveDetectionRunning)")
+                        })
                     }
+                    
                     Spacer()
+                    
                     CameraSwitchButton(action: {
                         model.switchCamera()
                     })
@@ -122,7 +122,7 @@ struct CameraLiveView: View {
             .onAppear {
                 DispatchQueue.global(qos: .background).async {
                     model.setupBindings()
-                    model.requestCameraPermission()
+                    model.checkAndRequestPermissions()
                 }
             }
             .overlay {
@@ -152,70 +152,20 @@ struct CameraLiveView: View {
         }
     }
     
-    func loadImage(from selection: PhotosPickerItem) async {
+    func loadImage() async {
         isLoadingImage = true
-        do {
-            if let data = try await selection.loadTransferable(type: Data.self) {
-                if let image = UIImage(data: data) {
-                    imageState.setUIImage(image)
-                    showingPhotoReview = true
+        if let imageSelection = viewModel.imageSelection {
+            do {
+                if let data = try await imageSelection.loadTransferable(type: Data.self) {
+                    if let image = UIImage(data: data) {
+                        imageState.setUIImage(image)
+                        showingPhotoReview = true
+                    }
                 }
+            } catch {
+                print("Error loading image: \(error.localizedDescription)")
             }
-        } catch {
-            print("Error loading image: \(error.localizedDescription)")
         }
         isLoadingImage = false
-    }
-}
-
-class ImageState: ObservableObject {
-    @Published var uiImage: UIImage?
-    @Published var cgImage: CGImage?
-
-    init(uiImage: UIImage? = nil, cgImage: CGImage? = nil) {
-        self.uiImage = uiImage
-        self.cgImage = cgImage
-    }
-
-    func setUIImage(_ image: UIImage) {
-        self.uiImage = image
-        self.cgImage = image.cgImage
-    }
-
-    func setCGImage(_ image: CGImage) {
-        self.cgImage = image
-        self.uiImage = UIImage(cgImage: image)
-    }
-}
-
-struct OverlayView: View {
-    @Binding var predictions: [CustomMLModel.Prediction]
-    @Binding var selectedItems: Set<UUID>
-
-    var body: some View {
-        GeometryReader { geometry in
-            ForEach(predictions.indices, id: \.self) { index in
-                let prediction = predictions[index]
-
-                if let boundingBox = prediction.boundingBox {
-                    let x = boundingBox.origin.x * geometry.size.width
-                    let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
-                    let width = boundingBox.size.width * geometry.size.width
-                    let height = boundingBox.size.height * geometry.size.height
-
-                    Rectangle()
-                        .stroke(Color(hue: Double(index) / Double(predictions.count), saturation: 1, brightness: 1), lineWidth: 2)
-                        .frame(width: width, height: height)
-                        .position(x: x + width / 2, y: y + height / 2)
-
-                    Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
-                        .foregroundColor(.white)
-                        .padding(2)
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(10)
-                        .position(x: x + width / 2, y: y + height)
-                }
-            }
-        }
     }
 }

@@ -16,9 +16,7 @@ struct CameraSwitchButton: View {
                label: {
             Circle()
                 .foregroundStyle(
-                    Color.gray.opacity(
-                        0.2
-                    )
+                    Color.gray.opacity(0.2)
                 )
                 .frame(
                     width: size,
@@ -29,13 +27,12 @@ struct CameraSwitchButton: View {
                     Image(
                         systemName: "camera.rotate.fill"
                     )
-                    .foregroundStyle(
-                        .white
-                    )
+                    .foregroundStyle(.white)
                 }
         })
     }
 }
 #Preview {
-    CameraSwitchButton(action: {})
+    CameraSwitchButton {
+    }
 }
