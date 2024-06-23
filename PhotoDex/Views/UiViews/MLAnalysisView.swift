@@ -1,11 +1,14 @@
 import SwiftUI
+import Vision
 
 struct MLAnalysisView: View {
     let image: UIImage
     @Binding var isPresented: Bool
     @State private var predictions: [CustomMLModel.Prediction] = []
+    @State private var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
     @State private var analysisErrors: Error?
     @State private var isAnalyzing: Bool = true
+    @State private var showPoseOverlay: Bool = false
     @State private var selectedItems: Set<UUID> = []
     @State private var showDrawer: Bool = false
     @State private var showAlert: Bool = false
@@ -26,7 +29,7 @@ struct MLAnalysisView: View {
                         } else {
                             Image(uiImage: image)
                                 .resizable()
-                                .aspectRatio(contentMode: .fill)
+                                .aspectRatio(contentMode: .fit)
                                 .frame(width: geometry.size.width)
                                 .clipped()
                                 .overlay(predictionOverlay())
@@ -50,6 +53,13 @@ struct MLAnalysisView: View {
                                 .background(Color.blue)
                                 .foregroundStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                                
+                                Spacer()
+                                
+                                PoseDetectSwitch(action: {
+                                    showPoseOverlay.toggle()
+                                })
+                                .padding()
                             }
                         }
                     }
@@ -115,30 +125,43 @@ struct MLAnalysisView: View {
                 }
             }
         }
+        PoseDetectionManager.shared.detectPose(in: image) { points in
+            DispatchQueue.main.async {
+                self.posePoints = points ?? [:]
+            }
+        }
     }
     
     private func predictionOverlay() -> some View {
         GeometryReader { geometry in
-            ForEach(predictions.indices, id: \.self) { index in
-                let prediction = self.predictions[index]
+            ZStack {
+                if showPoseOverlay {
+                    PoseOverlayView(points: $posePoints)
+//                        .rotationEffect(.degrees(90), anchor: .center)
+//                        .scaleEffect(x: 1, y: 1, anchor: .center)
+                }
                 
-                if selectedItems.contains(prediction.id), let boundingBox = prediction.boundingBox {
-                    let x = boundingBox.origin.x * geometry.size.width
-                    let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
-                    let width = boundingBox.size.width * geometry.size.width
-                    let height = boundingBox.size.height * geometry.size.height
+                ForEach(predictions.indices, id: \.self) { index in
+                    let prediction = self.predictions[index]
                     
-                    Rectangle()
-                        .stroke(Color(hue: Double(index) / Double(self.predictions.count), saturation: 1, brightness: 1), lineWidth: 2)
-                        .frame(width: width, height: height)
-                        .position(x: x + width / 2, y: y + height / 2)
-                    
-                    Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
-                        .foregroundColor(.white)
-                        .padding(2)
-                        .background(Color.black.opacity(0.7))
-                        .cornerRadius(10)
-                        .position(x: x + width / 2, y: y + height)
+                    if selectedItems.contains(prediction.id), let boundingBox = prediction.boundingBox {
+                        let x = boundingBox.origin.x * geometry.size.width
+                        let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
+                        let width = boundingBox.size.width * geometry.size.width
+                        let height = boundingBox.size.height * geometry.size.height
+                        
+                        Rectangle()
+                            .stroke(Color(hue: Double(index) / Double(self.predictions.count), saturation: 1, brightness: 1), lineWidth: 2)
+                            .frame(width: width, height: height)
+                            .position(x: x + width / 2, y: y + height / 2)
+                        
+                        Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
+                            .foregroundColor(.white)
+                            .padding(2)
+                            .background(Color.black.opacity(0.7))
+                            .cornerRadius(10)
+                            .position(x: x + width / 2, y: y + height)
+                    }
                 }
             }
         }

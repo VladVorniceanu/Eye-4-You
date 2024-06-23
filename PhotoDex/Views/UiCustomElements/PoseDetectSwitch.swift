@@ -9,7 +9,7 @@ import SwiftUI
 
 struct PoseDetectSwitch: View {
     var action: () -> Void
-    let size = UIScreen.main.bounds.width * 0.20
+    let size = UIScreen.main.bounds.width * 0.175
     
     var body: some View {
         Button(action: action) {
@@ -24,9 +24,9 @@ struct PoseDetectSwitch: View {
                 )
                 .overlay {
                     Image(systemName: "figure.walk")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.accent)
                         .font(.system(size: 40))
-                        .shadow(color: .gray, radius: 3)
+                        .shadow(color: .gray, radius: 2)
                 }
                 .font(.system(size: 30))
         }

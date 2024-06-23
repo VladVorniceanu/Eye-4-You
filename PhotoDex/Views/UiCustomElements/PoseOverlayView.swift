@@ -30,7 +30,7 @@ struct PoseOverlayView: View {
                 ForEach(orderedJoints, id: \.self) { key in
                     if let point = points[key] {
                         Circle()
-                            .fill(Color.gray.opacity(0.8))
+                            .fill(Color.gray.opacity(0.5))
                             .frame(width: 20, height: 20)
                             .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
                     }
@@ -44,7 +44,7 @@ struct PoseOverlayView: View {
                         }
                     }
                 }
-                .stroke(Color.gray.opacity(0.8), lineWidth: 10)
+                .stroke(Color.gray.opacity(0.5), lineWidth: 10)
                 
                 ForEach(orderedJoints, id: \.self) { key in
                     if let point = points[key] {

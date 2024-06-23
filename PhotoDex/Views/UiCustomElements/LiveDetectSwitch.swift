@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LiveDetectSwitch: View {
     var action: () -> Void
-    let size = UIScreen.main.bounds.width * 0.20
+    let size = UIScreen.main.bounds.width * 0.175
     
     var body: some View {
         Button(action: action) {
