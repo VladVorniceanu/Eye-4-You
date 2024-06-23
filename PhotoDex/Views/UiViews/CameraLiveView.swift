@@ -1,4 +1,5 @@
 import SwiftUI
+import Vision
 import PhotosUI
 
 struct CameraLiveView: View {
@@ -14,9 +15,9 @@ struct CameraLiveView: View {
     @State private var predictions: [CustomMLModel.Prediction] = []
     @State private var selectedItems: Set<UUID> = []
     @State private var analysisError: Error?
+    @State private var isPoseDetectionRunning = false
+    @State private var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
 
-    let width = UIScreen.main.bounds.width
-    
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -25,7 +26,7 @@ struct CameraLiveView: View {
                 FlashButton(model: model)
                 
                 ZStack {
-                    FrameView(isLiveDetectionFlow: $model.isLiveDetectionRunning, session: model.session, predictions: $predictions, analysisError: $analysisError) { tapPoint in
+                    FrameView(isLiveDetectionFlow: $model.isLiveDetectionRunning, session: model.session, predictions: $predictions, analysisError: $analysisError, isPoseDetectionRunning: $isPoseDetectionRunning, posePoints: $posePoints) { tapPoint in
                         isFocused = true
                         focusLocation = tapPoint
                         model.setFocus(point: tapPoint)
@@ -47,6 +48,10 @@ struct CameraLiveView: View {
                     }
                     if model.isLiveDetectionRunning {
                         OverlayView(predictions: $predictions, selectedItems: $selectedItems)
+                    }
+
+                    if isPoseDetectionRunning {
+                        PoseOverlayView(points: $posePoints)
                     }
                 }
                 
@@ -90,6 +95,11 @@ struct CameraLiveView: View {
                         LiveDetectSwitch(action: {
                             model.toggleLiveDetection()
                             print("Live detection toggled: \(model.isLiveDetectionRunning)")
+                        })
+
+                        PoseDetectSwitch(action: {
+                            isPoseDetectionRunning.toggle()
+                            print("Pose detection toggled: \(isPoseDetectionRunning)")
                         })
                     }
                     

@@ -6,12 +6,15 @@
 
 import SwiftUI
 import AVFoundation
+import Vision
 
 struct FrameView: UIViewRepresentable {
     @Binding var isLiveDetectionFlow: Bool
     let session: AVCaptureSession
     @Binding var predictions: [CustomMLModel.Prediction]
     @Binding var analysisError: Error?
+    @Binding var isPoseDetectionRunning: Bool
+    @Binding var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint]
     var onTap: (CGPoint) -> Void
     
     func makeCoordinator() -> Coordinator {
@@ -67,7 +70,7 @@ struct FrameView: UIViewRepresentable {
         func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
             guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
             
-            if !parent.isLiveDetectionFlow {
+            if !parent.isLiveDetectionFlow && !parent.isPoseDetectionRunning {
                 return
             }
             
@@ -76,15 +79,23 @@ struct FrameView: UIViewRepresentable {
             guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
             let uiImage = UIImage(cgImage: cgImage).rotated(byDegrees: 90)!
             
-            DispatchQueue.global().async {
-                YoloCoreML.makePredictionsUsingYOLO(for: uiImage, model: CustomMLModel.yoloModel) { result in
+            if parent.isPoseDetectionRunning {
+                PoseDetectionManager.shared.detectPose(in: uiImage) { points in
                     DispatchQueue.main.async {
-                        switch result {
-                        case .success(let predictions):
-                            self.parent.predictions = predictions
-                        case .failure(let error):
-                            self.parent.analysisError = error
-                            print("YOLO Live Analysis Error: \(error.localizedDescription)")
+                        self.parent.posePoints = points ?? [:]
+                    }
+                }
+            } else if parent.isLiveDetectionFlow {
+                DispatchQueue.global().async {
+                    YoloCoreML.makePredictionsUsingYOLO(for: uiImage, model: CustomMLModel.yoloModel) { result in
+                        DispatchQueue.main.async {
+                            switch result {
+                            case .success(let predictions):
+                                self.parent.predictions = predictions
+                            case .failure(let error):
+                                self.parent.analysisError = error
+                                print("YOLO Live Analysis Error: \(error.localizedDescription)")
+                            }
                         }
                     }
                 }
