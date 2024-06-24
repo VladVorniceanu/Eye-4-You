@@ -1,0 +1,18 @@
+{
+  "Outputs" : {
+    "classLabel" : {
+      "MLFeatureShortDescription" : "The most likely age, for the given input."
+    },
+    "prob" : {
+      "MLFeatureShortDescription" : "The probabilities for each age, for the given input."
+    }
+  },
+  "Inputs" : {
+    "data" : {
+      "MLFeatureShortDescription" : "An image with a face."
+    }
+  },
+  "TrainingInputs" : {
+
+  }
+}

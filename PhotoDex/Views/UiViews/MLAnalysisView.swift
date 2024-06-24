@@ -44,22 +44,27 @@ struct MLAnalysisView: View {
                                 .foregroundStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                             } else {
-                                Button("Vezi predicțiile") {
-                                    showDrawer.toggle()
-                                    alertMessage = "Lista de predicții se găsește în meniul lateral din dreapta."
-                                    showAlert = true
-                                }
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundStyle(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                                
                                 Spacer()
-                                
-                                PoseDetectSwitch(action: {
-                                    showPoseOverlay.toggle()
+                                HStack(alignment: .center, content: {
+                                    Spacer()
+                                    Button("Vezi predicțiile") {
+                                        showDrawer.toggle()
+                                        alertMessage = "Lista de predicții se găsește în meniul lateral din dreapta."
+                                        showAlert = true
+                                    }
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundStyle(.white)
+                                    .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                                    
+                                    Spacer()
+                                    
+                                    PoseDetectSwitch(action: {
+                                        showPoseOverlay.toggle()
+                                    })
+                                    .padding()
+                                    Spacer()
                                 })
-                                .padding()
                             }
                         }
                     }
@@ -154,13 +159,25 @@ struct MLAnalysisView: View {
                             .stroke(Color(hue: Double(index) / Double(self.predictions.count), saturation: 1, brightness: 1), lineWidth: 2)
                             .frame(width: width, height: height)
                             .position(x: x + width / 2, y: y + height / 2)
-                        
-                        Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
-                            .foregroundColor(.white)
-                            .padding(2)
+
+                        if let humanAnalysis = prediction.humanAnalysis {
+                            VStack {
+                                Text("Age: \(humanAnalysis.age)")
+                                Text("Gender: \(humanAnalysis.gender)")
+                                Text("Emotion: \(humanAnalysis.emotion)")
+                            }
+                            .padding(5)
                             .background(Color.black.opacity(0.7))
                             .cornerRadius(10)
-                            .position(x: x + width / 2, y: y + height)
+                            .position(x: x + width / 2, y: y + height - 20)
+                        } else {
+                            Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
+                                .foregroundColor(.white)
+                                .padding(2)
+                                .background(Color.black.opacity(0.7))
+                                .cornerRadius(10)
+                                .position(x: x + width / 2, y: y + height)
+                        }
                     }
                 }
             }

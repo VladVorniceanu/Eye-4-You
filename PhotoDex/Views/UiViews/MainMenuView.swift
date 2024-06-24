@@ -79,11 +79,13 @@ struct MainMenuView: View {
     }
     
     func initializeModels() {
-        DispatchQueue.global(qos: .background).async {
-            CustomMLModel.initializeModels()
+        CustomMLModel.initializeModels { success in
             DispatchQueue.main.async {
-                modelsLoaded = (CustomMLModel.yoloModel != nil && CustomMLModel.mobileNetModel != nil)
+                modelsLoaded = success
             }
+        }
+        DispatchQueue.global(qos: .background).async {
+            _ = HumanAnalysisManager.shared
         }
     }
     

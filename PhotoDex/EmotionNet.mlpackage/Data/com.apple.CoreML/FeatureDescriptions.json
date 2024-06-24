@@ -1,0 +1,18 @@
+{
+  "Outputs" : {
+    "classLabel" : {
+      "MLFeatureShortDescription" : "The most likely type of emotion, for the given input."
+    },
+    "prob" : {
+      "MLFeatureShortDescription" : "The probabilities for each emotion, for the given input."
+    }
+  },
+  "Inputs" : {
+    "data" : {
+      "MLFeatureShortDescription" : "An image with a face."
+    }
+  },
+  "TrainingInputs" : {
+
+  }
+}

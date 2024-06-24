@@ -1,0 +1,6 @@
+{
+  "MLModelVersionStringKey" : "--",
+  "MLModelDescriptionKey" : "Gender Classification using Convolutional Neural Networks",
+  "MLModelAuthorKey" : "Gil Levi and Tal Hassner",
+  "MLModelLicenseKey" : "Unknown"
+}

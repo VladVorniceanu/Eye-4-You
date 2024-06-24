@@ -9,14 +9,16 @@ import CoreML
 import Vision
 import UIKit
 
-class CustomMLModel : ObservableObject {
+class CustomMLModel: ObservableObject {
     // MARK: - Properties
     static let shared = CustomMLModel()
     static var yoloModel: VNCoreMLModel!
     static var mobileNetModel: VNCoreMLModel!
+    private static let modelLoadingGroup = DispatchGroup()
+
     private var predictionHandlers = [VNRequest: ImagePredictionHandler]()
     typealias ImagePredictionHandler = ([Prediction]?) -> Void
-    
+
     // MARK: - Prediction Structure
     struct Prediction: Equatable, Hashable, Identifiable {
         let id = UUID()
@@ -25,7 +27,8 @@ class CustomMLModel : ObservableObject {
         var boundingBox: CGRect?
         var contourPath: UIBezierPath?
         var isSelected: Bool = false
-        
+        var humanAnalysis: HumanAnalysisResult?
+
         static func ==(lhs: Prediction, rhs: Prediction) -> Bool {
             return lhs.id == rhs.id
         }
@@ -36,61 +39,88 @@ class CustomMLModel : ObservableObject {
     }
     
     // MARK: - Initialization
-    static func initializeModels() {
-        yoloModel = YoloCoreML.createYOLOModel()
-        mobileNetModel = MobileNetV2CoreML.createMobileNetModel()
+    static func initializeModels(completion: @escaping (Bool) -> Void) {
+        modelLoadingGroup.enter()
+        DispatchQueue.global().async {
+            yoloModel = YoloCoreML.createYOLOModel()
+            modelLoadingGroup.leave()
+        }
+
+        modelLoadingGroup.enter()
+        DispatchQueue.global().async {
+            mobileNetModel = MobileNetV2CoreML.createMobileNetModel()
+            modelLoadingGroup.leave()
+        }
+
+        modelLoadingGroup.notify(queue: .main) {
+            let modelsLoaded = (yoloModel != nil && mobileNetModel != nil)
+            completion(modelsLoaded)
+        }
     }
+
     
     // MARK: - Combined Predictions
     func makePredictionsUsingYOLOAndMobileNet(for image: UIImage, completionHandler: @escaping ([CustomMLModel.Prediction]?) -> Void) {
-        // Utilize YOLO for initial object detection
-        YoloCoreML.makePredictionsUsingYOLO(for: image, model: CustomMLModel.yoloModel) { result in
-            switch result {
-            case .success(let yoloPredictions):
-                print("YOLO Predictions: \(yoloPredictions)\n\n")
-                guard !yoloPredictions.isEmpty else {
-                    completionHandler(nil) // No objects detected by YOLO
-                    return
-                }
-                
-                // Create a dispatch group to handle the MobileNet predictions
-                let dispatchGroup = DispatchGroup()
-                var finalPredictions: [CustomMLModel.Prediction] = []
-
-                for yoloPrediction in yoloPredictions {
-                    guard let boundingBox = yoloPrediction.boundingBox else {
-                        finalPredictions.append(yoloPrediction)
-                        continue
+        // Wait for the models to be ready
+        CustomMLModel.modelLoadingGroup.notify(queue: .main) {
+            // Utilize YOLO for initial object detection
+            YoloCoreML.makePredictionsUsingYOLO(for: image, model: CustomMLModel.yoloModel) { result in
+                switch result {
+                case .success(let yoloPredictions):
+                    print("YOLO Predictions: \(yoloPredictions)\n\n")
+                    guard !yoloPredictions.isEmpty else {
+                        completionHandler(nil) // No objects detected by YOLO
+                        return
                     }
 
-                    // Add a 10px padding around the bounding box
-                    let croppedImage = self.cropImage(image: image, boundingBox: boundingBox, padding: 10)
+                    // Create a dispatch group to handle the MobileNet and Human Analysis predictions
+                    let dispatchGroup = DispatchGroup()
+                    var finalPredictions: [CustomMLModel.Prediction] = []
 
-                    dispatchGroup.enter()
-                    MobileNetV2CoreML.makePredictionMobileNetV2(for: croppedImage, model: CustomMLModel.mobileNetModel) { mobileNetResult in
-                        switch mobileNetResult {
-                        case .success(let mobileNetPrediction):
-                            print("MobileNet Prediction for cropped image: \(mobileNetPrediction)\n\n")
-                            var updatedPrediction = yoloPrediction
-                            updatedPrediction.label = mobileNetPrediction.label
-                            updatedPrediction.confidence = mobileNetPrediction.confidence
-                            finalPredictions.append(updatedPrediction)
-                        case .failure(let error):
-                            print("MobileNet prediction failed: \(error.localizedDescription)\n\n")
+                    for yoloPrediction in yoloPredictions {
+                        guard let boundingBox = yoloPrediction.boundingBox else {
                             finalPredictions.append(yoloPrediction)
+                            continue
                         }
-                        dispatchGroup.leave()
+
+                        // Add a 10px padding around the bounding box
+                        let croppedImage = self.cropImage(image: image, boundingBox: boundingBox, padding: 10)
+
+                        dispatchGroup.enter()
+                        if yoloPrediction.label == "person" {
+                            HumanAnalysisManager.shared.analyzeHuman(in: croppedImage) { humanAnalysisResult in
+                                var updatedPrediction = yoloPrediction
+                                updatedPrediction.humanAnalysis = humanAnalysisResult
+                                finalPredictions.append(updatedPrediction)
+                                dispatchGroup.leave()
+                            }
+                        } else {
+                            MobileNetV2CoreML.makePredictionMobileNetV2(for: croppedImage, model: CustomMLModel.mobileNetModel) { mobileNetResult in
+                                switch mobileNetResult {
+                                case .success(let mobileNetPrediction):
+                                    print("MobileNet Prediction for cropped image: \(mobileNetPrediction)\n\n")
+                                    var updatedPrediction = yoloPrediction
+                                    updatedPrediction.label = mobileNetPrediction.label
+                                    updatedPrediction.confidence = mobileNetPrediction.confidence
+                                    finalPredictions.append(updatedPrediction)
+                                case .failure(let error):
+                                    print("MobileNet prediction failed: \(error.localizedDescription)\n\n")
+                                    finalPredictions.append(yoloPrediction)
+                                }
+                                dispatchGroup.leave()
+                            }
+                        }
                     }
-                }
 
-                dispatchGroup.notify(queue: .main) {
-                    print("Final Combined Predictions: \(finalPredictions)\n\n")
-                    completionHandler(finalPredictions)
-                }
+                    dispatchGroup.notify(queue: .main) {
+                        print("Final Combined Predictions: \(finalPredictions)\n\n")
+                        completionHandler(finalPredictions)
+                    }
 
-            case .failure(let error):
-                print("YOLO prediction failed: \(error.localizedDescription)\n\n")
-                completionHandler(nil)
+                case .failure(let error):
+                    print("YOLO prediction failed: \(error.localizedDescription)\n\n")
+                    completionHandler(nil)
+                }
             }
         }
     }

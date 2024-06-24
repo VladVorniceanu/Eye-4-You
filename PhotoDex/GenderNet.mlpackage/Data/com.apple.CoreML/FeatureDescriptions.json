@@ -1,0 +1,18 @@
+{
+  "Outputs" : {
+    "classLabel" : {
+      "MLFeatureShortDescription" : "The most likely gender, for the given input."
+    },
+    "prob" : {
+      "MLFeatureShortDescription" : "The probabilities for each gender, for the given input."
+    }
+  },
+  "Inputs" : {
+    "data" : {
+      "MLFeatureShortDescription" : "An image with a face."
+    }
+  },
+  "TrainingInputs" : {
+
+  }
+}
