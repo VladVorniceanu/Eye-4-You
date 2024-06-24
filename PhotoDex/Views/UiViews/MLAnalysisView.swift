@@ -162,8 +162,8 @@ struct MLAnalysisView: View {
 
                         if let humanAnalysis = prediction.humanAnalysis {
                             VStack {
-                                Text("Age: \(humanAnalysis.age)")
-                                Text("Gender: \(humanAnalysis.gender)")
+                                Text("Vârsta: \(humanAnalysis.age) ani")
+                                Text("Sex: \(humanAnalysis.gender == "Female" ? "Femeie" : "Bărbat")")
                                 Text("Emotion: \(humanAnalysis.emotion)")
                             }
                             .padding(5)
