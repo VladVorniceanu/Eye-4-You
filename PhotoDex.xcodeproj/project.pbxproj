@@ -39,10 +39,10 @@
 		34A71F2E2C28994000FA4717 /* PoseDetectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F2D2C28994000FA4717 /* PoseDetectionManager.swift */; };
 		34A71F302C2899D200FA4717 /* PoseDetectSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F2F2C2899D200FA4717 /* PoseDetectSwitch.swift */; };
 		34A71F322C2899F000FA4717 /* PoseOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F312C2899F000FA4717 /* PoseOverlayView.swift */; };
-		34A71F4E2C29C51900FA4717 /* HumanAnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F4D2C29C51900FA4717 /* HumanAnalysisManager.swift */; };
 		34A71F582C29CFC300FA4717 /* AgeNet.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F552C29CFC300FA4717 /* AgeNet.mlpackage */; };
 		34A71F592C29CFC300FA4717 /* EmotionNet.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F562C29CFC300FA4717 /* EmotionNet.mlpackage */; };
 		34A71F5A2C29CFC300FA4717 /* GenderNet.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F572C29CFC300FA4717 /* GenderNet.mlpackage */; };
+		34D15DC12C31643300F7500E /* HumanAnalysisManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34D15DBE2C2F25A400F7500E /* HumanAnalysisManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -79,10 +79,10 @@
 		34A71F2D2C28994000FA4717 /* PoseDetectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionManager.swift; sourceTree = "<group>"; };
 		34A71F2F2C2899D200FA4717 /* PoseDetectSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectSwitch.swift; sourceTree = "<group>"; };
 		34A71F312C2899F000FA4717 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
-		34A71F4D2C29C51900FA4717 /* HumanAnalysisManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = HumanAnalysisManager.swift; path = ../../../../Desktop/PhotoDex/Handler/HumanAnalysisManager.swift; sourceTree = "<group>"; };
 		34A71F552C29CFC300FA4717 /* AgeNet.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = AgeNet.mlpackage; path = MLModels/AgeNet.mlpackage; sourceTree = "<group>"; };
 		34A71F562C29CFC300FA4717 /* EmotionNet.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = EmotionNet.mlpackage; path = MLModels/EmotionNet.mlpackage; sourceTree = "<group>"; };
 		34A71F572C29CFC300FA4717 /* GenderNet.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; name = GenderNet.mlpackage; path = MLModels/GenderNet.mlpackage; sourceTree = "<group>"; };
+		34D15DBE2C2F25A400F7500E /* HumanAnalysisManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HumanAnalysisManager.swift; path = MLHandlers/HumanAnalysisManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,16 +138,16 @@
 		3462D4862BBC2B13006626CA /* Handler */ = {
 			isa = PBXGroup;
 			children = (
-				34A71F4D2C29C51900FA4717 /* HumanAnalysisManager.swift */,
-				348197AF2B9F8259008E5F76 /* CameraManager.swift */,
+				34D15DBE2C2F25A400F7500E /* HumanAnalysisManager.swift */,
 				34A71F2D2C28994000FA4717 /* PoseDetectionManager.swift */,
-				3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */,
-				342AE5302C22E0BD001B4D9D /* PhotoPicker.swift */,
-				34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */,
-				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
 				3405BF192BCAD84300CE302F /* CustomMLModel.swift */,
 				34A71F192C25A8D700FA4717 /* YoloCoreML.swift */,
 				34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */,
+				348197AF2B9F8259008E5F76 /* CameraManager.swift */,
+				3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */,
+				3462D4B72BBFE590006626CA /* CameraViewModel.swift */,
+				342AE5302C22E0BD001B4D9D /* PhotoPicker.swift */,
+				34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */,
 				34A71F1F2C272B8000FA4717 /* UIImage+Extension.swift */,
 				34A71F232C27347000FA4717 /* ImageState.swift */,
 			);
@@ -266,6 +266,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				34A71F1E2C2728A300FA4717 /* PermissionsManager.swift in Sources */,
+				34D15DC12C31643300F7500E /* HumanAnalysisManager.swift in Sources */,
 				34A71F302C2899D200FA4717 /* PoseDetectSwitch.swift in Sources */,
 				34A71F222C27343400FA4717 /* OverlayView.swift in Sources */,
 				3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */,
@@ -279,7 +280,6 @@
 				34A71F242C27347000FA4717 /* ImageState.swift in Sources */,
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
-				34A71F4E2C29C51900FA4717 /* HumanAnalysisManager.swift in Sources */,
 				3405BF032BC8201800CE302F /* GalleryThumbnail.swift in Sources */,
 				3405BF1A2BCAD84300CE302F /* CustomMLModel.swift in Sources */,
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,

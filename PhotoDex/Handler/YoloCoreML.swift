@@ -1,10 +1,3 @@
-//
-//  YoloCoreML.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 21.06.2024.
-//
-
 //  YoloCoreML.swift
 //  PhotoDex
 //

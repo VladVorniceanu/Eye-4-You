@@ -196,7 +196,6 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
                 return
             }
 
-            // Check if the photoOutput is properly added to the session
             guard self.session.outputs.contains(self.photoOutput) else {
                 print("CameraManager: Photo output is not added to the session")
                 completion(nil)

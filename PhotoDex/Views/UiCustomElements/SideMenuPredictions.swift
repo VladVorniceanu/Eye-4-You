@@ -1,89 +1,79 @@
-//
-//  SideMenuPredictions.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 21.06.2024.
-//
-
 import SwiftUI
 
 struct SideMenuPredictions: View {
     @Binding var isPresented: Bool
     @Binding var predictions: [CustomMLModel.Prediction]
     @Binding var selectedItems: Set<UUID>
-    @State private var offset = CGSize.zero
-    @State private var initialDragPosition: CGFloat = 0
+    @State private var offset: CGFloat = 0
     
     var body: some View {
         GeometryReader { geometry in
             HStack {
                 Spacer()
-                VStack(alignment: .leading) {
+                VStack(alignment: .trailing) {
                     Text("Predicții")
-                        .font(.title2)
+                        .font(.title)
                         .fontWeight(.bold)
                         .padding(.top, 20)
-                        .padding(.leading, 20)
+                        .padding(.horizontal, 20)
                     
-                    List(predictions, id: \.self) { item in
-                        HStack {
-                            Toggle(isOn: Binding(
-                                get: { selectedItems.contains(item.id) },
-                                set: { isSelected in
-                                    if isSelected {
-                                        selectedItems.insert(item.id)
-                                    } else {
-                                        selectedItems.remove(item.id)
+                    List {
+                        ForEach(predictions, id: \.id) { item in
+                            HStack {
+                                Toggle(isOn: Binding(
+                                    get: { selectedItems.contains(item.id) },
+                                    set: { isSelected in
+                                        if isSelected {
+                                            selectedItems.insert(item.id)
+                                        } else {
+                                            selectedItems.remove(item.id)
+                                        }
                                     }
-                                }
-                            )) {
-                                VStack(alignment: .leading) {
-                                    Text(item.label.capitalized)
-                                    Text("\(String(format: "%.2f", (item.confidence) * 100))%")
-                                        .font(.subheadline)
-                                        .foregroundColor(.gray)
+                                )) {
+                                    VStack(alignment: .leading) {
+                                        Text(item.label.capitalized)
+                                        Text("\(String(format: "%.2f", item.confidence * 100))%")
+                                            .font(.subheadline)
+                                            .foregroundColor(.gray)
+                                    }
                                 }
                             }
                         }
                     }
                     .listStyle(PlainListStyle())
                 }
-                .frame(width: geometry.size.width * 0.8)
-                .background(Color.white)
-                .cornerRadius(10)
-                .shadow(radius: 10)
-                .offset(x: offset.width)
+                .frame(width: geometry.size.width * 0.75)
+                .background(Color(UIColor.systemBackground))
+                .offset(x: offset)
                 .gesture(
                     DragGesture()
                         .onChanged { value in
-                            if value.translation.width < 0 {
-                                self.offset.width = value.translation.width
+                            if value.translation.width > 0 {
+                                self.offset = value.translation.width
                             }
                         }
                         .onEnded { value in
-                            if value.translation.width < -50 {
+                            if value.translation.width > 50 {
                                 withAnimation {
-                                    self.offset.width = -geometry.size.width * 0.8
                                     isPresented = false
+                                    offset = geometry.size.width
                                 }
                             } else {
                                 withAnimation {
-                                    self.offset = .zero
+                                    self.offset = 0
                                 }
                             }
                         }
                 )
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.black.opacity(0.5).ignoresSafeArea())
             .onAppear {
                 withAnimation {
-                    self.offset = .zero
+                    self.offset = 0
                 }
             }
             .onDisappear {
                 withAnimation {
-                    self.offset.width = -geometry.size.width * 0.8
+                    self.offset = geometry.size.width
                 }
             }
         }

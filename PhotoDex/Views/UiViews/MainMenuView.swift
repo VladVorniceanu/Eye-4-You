@@ -16,38 +16,64 @@ struct MainMenuView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 20) {
                 Text("PhotoDex")
-                    .font(.largeTitle)
-                    .padding()
+                    .font(.largeTitle.bold())
+                    .foregroundColor(.blue)
+                    .padding(.top, 50)
                 
-                NavigationStack {
+                VStack(spacing: 20) {
                     NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: true)) {
-                        Text("Detectează obiecte LIVE")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                    }.opacity(modelsLoaded ? 1.0 : 0.5)
-                        .disabled(!modelsLoaded)
+                        HStack {
+                            Image(systemName: "livephoto")
+                                .font(.title)
+                                .padding(.trailing, 10)
+                            Text("Detectează obiecte LIVE")
+                                .fontWeight(.semibold)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        .shadow(color: .gray, radius: 5, x: 0, y: 5)
+                    }
+                    .opacity(modelsLoaded ? 1.0 : 0.5)
+                    .disabled(!modelsLoaded)
                     
                     NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: false)) {
-                        Text("Capturează o poză")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        HStack {
+                            Image(systemName: "camera")
+                                .font(.title)
+                                .padding(.trailing, 10)
+                            Text("Capturează o poză")
+                                .fontWeight(.semibold)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        .shadow(color: .gray, radius: 5, x: 0, y: 5)
                     }
                     
                     PhotosPicker(selection: $viewModel.imageSelection,
                                  matching: .any(of: [.images, .not(.screenshots)]),
                                  preferredItemEncoding: .current,
                                  photoLibrary: .shared()) {
-                        Text("Alege din galerie")
-                            .padding()
-                            .background(Color.blue)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        HStack {
+                            Image(systemName: "photo.on.rectangle")
+                                .font(.title)
+                                .padding(.trailing, 10)
+                            Text("Alege din galerie")
+                                .fontWeight(.semibold)
+                        }
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))
+                        .foregroundColor(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
+                        .shadow(color: .gray, radius: 5, x: 0, y: 5)
                     }
                     .onChange(of: viewModel.imageSelection) { _ in
                         Task {
@@ -55,7 +81,10 @@ struct MainMenuView: View {
                         }
                     }
                 }
+                .padding(.horizontal)
+                .padding(.top, 30)
             }
+            .padding(.bottom, 50)
         }
         .onAppear {
             initializeModels()

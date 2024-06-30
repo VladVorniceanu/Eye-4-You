@@ -152,7 +152,7 @@ struct CameraLiveView: View {
                 }
             }
         }
-        .navigationTitle("Capturează o imagine")
+        .navigationTitle(isLiveDetectionFlow ? "Analiză cadre LIVE" : "Capturează o imagine")
     }
     
     func openSettings() {

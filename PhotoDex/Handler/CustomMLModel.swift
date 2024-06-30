@@ -107,9 +107,9 @@ class CustomMLModel: ObservableObject {
                                     print("MobileNet prediction failed: \(error.localizedDescription)\n\n")
                                     finalPredictions.append(yoloPrediction)
                                 }
-                                dispatchGroup.leave()
                             }
                         }
+                        dispatchGroup.leave()
                     }
 
                     dispatchGroup.notify(queue: .main) {

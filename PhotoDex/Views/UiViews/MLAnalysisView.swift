@@ -24,7 +24,7 @@ struct MLAnalysisView: View {
                                 .padding()
                         } else if let error = analysisErrors {
                             Text("Error: \(error.localizedDescription)")
-                                .foregroundStyle(.red)
+                                .foregroundColor(.red)
                                 .padding()
                         } else {
                             Image(uiImage: image)
@@ -41,7 +41,7 @@ struct MLAnalysisView: View {
                                 }
                                 .padding()
                                 .background(Color.red)
-                                .foregroundStyle(.white)
+                                .foregroundColor(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                             } else {
                                 Spacer()
@@ -54,7 +54,7 @@ struct MLAnalysisView: View {
                                     }
                                     .padding()
                                     .background(Color.blue)
-                                    .foregroundStyle(.white)
+                                    .foregroundColor(.white)
                                     .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
                                     
                                     Spacer()
@@ -83,7 +83,7 @@ struct MLAnalysisView: View {
                                 showDrawer.toggle()
                             }
                         }) {
-                            Image(systemName: "line.3.horizontal")
+                            Image(systemName: showDrawer ? "xmark" : "line.3.horizontal")
                         }
                         .buttonStyle(PlainButtonStyle())
                         .animation(.easeInOut, value: showDrawer)
@@ -96,9 +96,24 @@ struct MLAnalysisView: View {
                                 withAnimation {
                                     showDrawer = true
                                 }
+                            } else if value.translation.width > 50 {
+                                withAnimation {
+                                    showDrawer = false
+                                }
                             }
                         }
                 )
+            }
+            
+            if showDrawer {
+                Color.black.opacity(showDrawer ? 0.5 : 0)
+                    .ignoresSafeArea()
+                    .animation(.easeInOut, value: showDrawer)
+                    .onTapGesture {
+                        withAnimation {
+                            showDrawer = false
+                        }
+                    }
             }
             
             if showDrawer {
@@ -106,6 +121,16 @@ struct MLAnalysisView: View {
                     .transition(.move(edge: .trailing))
             }
         }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    if value.translation.width > 50 {
+                        withAnimation {
+                            showDrawer = false
+                        }
+                    }
+                }
+        )
     }
     
     private func performAnalysis() {
@@ -142,8 +167,6 @@ struct MLAnalysisView: View {
             ZStack {
                 if showPoseOverlay {
                     PoseOverlayView(points: $posePoints)
-//                        .rotationEffect(.degrees(90), anchor: .center)
-//                        .scaleEffect(x: 1, y: 1, anchor: .center)
                 }
                 
                 ForEach(predictions.indices, id: \.self) { index in
