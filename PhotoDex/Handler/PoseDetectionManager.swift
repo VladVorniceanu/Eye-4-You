@@ -18,7 +18,7 @@ class PoseDetectionManager {
     }
 
     func detectPose(in image: UIImage, completion: @escaping ([VNHumanBodyPoseObservation.JointName: CGPoint]?) -> Void) {
-        guard let cgImage = image.cgImage else {
+        guard let fixedImage = image.fixedOrientation(), let cgImage = fixedImage.cgImage else {
             completion(nil)
             return
         }

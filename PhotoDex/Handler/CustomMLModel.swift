@@ -60,8 +60,7 @@ class CustomMLModel: ObservableObject {
 
     
     // MARK: - Combined Predictions
-    func makePredictionsUsingYOLOAndMobileNet(for image: UIImage, completionHandler: @escaping ([CustomMLModel.Prediction]?) -> Void) {
-        // Wait for the models to be ready
+    func makePredictionsUsingYOLOAndMobileNet(for image: UIImage, completionHandler: @escaping ([CustomMLModel.Prediction]?, [VNHumanBodyPoseObservation.JointName: CGPoint]?) -> Void) {        // Wait for the models to be ready
         CustomMLModel.modelLoadingGroup.notify(queue: .main) {
             // Utilize YOLO for initial object detection
             YoloCoreML.makePredictionsUsingYOLO(for: image, model: CustomMLModel.yoloModel) { result in
@@ -69,7 +68,7 @@ class CustomMLModel: ObservableObject {
                 case .success(let yoloPredictions):
                     print("YOLO Predictions: \(yoloPredictions)\n\n")
                     guard !yoloPredictions.isEmpty else {
-                        completionHandler(nil) // No objects detected by YOLO
+                        completionHandler(nil, nil) // No objects detected by YOLO
                         return
                     }
 
@@ -92,7 +91,7 @@ class CustomMLModel: ObservableObject {
                                 var updatedPrediction = yoloPrediction
                                 updatedPrediction.humanAnalysis = humanAnalysisResult
                                 finalPredictions.append(updatedPrediction)
-                                dispatchGroup.leave()
+
                             }
                         } else {
                             MobileNetV2CoreML.makePredictionMobileNetV2(for: croppedImage, model: CustomMLModel.mobileNetModel) { mobileNetResult in
@@ -114,12 +113,14 @@ class CustomMLModel: ObservableObject {
 
                     dispatchGroup.notify(queue: .main) {
                         print("Final Combined Predictions: \(finalPredictions)\n\n")
-                        completionHandler(finalPredictions)
+                        PoseDetectionManager.shared.detectPose(in: image) { points in
+                            completionHandler(finalPredictions, points)
+                        }
                     }
 
                 case .failure(let error):
                     print("YOLO prediction failed: \(error.localizedDescription)\n\n")
-                    completionHandler(nil)
+                    completionHandler(nil, nil)
                 }
             }
         }

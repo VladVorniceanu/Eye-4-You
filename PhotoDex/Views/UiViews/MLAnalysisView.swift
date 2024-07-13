@@ -136,7 +136,7 @@ struct MLAnalysisView: View {
     private func performAnalysis() {
         let mlModel = CustomMLModel.shared
         DispatchQueue.global(qos: .background).async {
-            mlModel.makePredictionsUsingYOLOAndMobileNet(for: image) { predictions in
+            mlModel.makePredictionsUsingYOLOAndMobileNet(for: image) { predictions, posePoints in
                 DispatchQueue.main.async {
                     if let predictions = predictions {
                         self.predictions = predictions
@@ -152,12 +152,8 @@ struct MLAnalysisView: View {
                         self.analysisErrors = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
                         self.isAnalyzing = false
                     }
+                    self.posePoints = posePoints ?? [:]
                 }
-            }
-        }
-        PoseDetectionManager.shared.detectPose(in: image) { points in
-            DispatchQueue.main.async {
-                self.posePoints = points ?? [:]
             }
         }
     }
