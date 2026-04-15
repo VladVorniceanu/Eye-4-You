@@ -6,9 +6,13 @@ struct FlashButton: View {
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: isOn ? "bolt.fill" : "bolt.slash.fill")
-                .font(.system(size: 20, weight: .medium))
+            Image(systemName: isOn ? "bolt.fill" : "bolt.slash")
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(isOn ? Color.yellow : Color.white)
+                .frame(width: 44, height: 44)
+                .background(Color.white.opacity(0.12), in: Circle())
         }
-        .tint(isOn ? .yellow : .white)
+        .buttonStyle(.plain)
+        .accessibilityLabel(isOn ? "Opreste blitul" : "Porneste blitul")
     }
 }

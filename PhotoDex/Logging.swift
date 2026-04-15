@@ -11,7 +11,3 @@ enum AppLogger {
     static let error = Logger(subsystem: subsystem, category: "error")
 }
 
-// Usage examples:
-// AppLogger.analysis.debug("Debug message: \(someValue)")
-// AppLogger.camera.info("Camera switched to front")
-// AppLogger.error.error("\(error.localizedDescription)")

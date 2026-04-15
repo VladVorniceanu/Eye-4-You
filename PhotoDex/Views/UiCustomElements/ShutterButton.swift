@@ -1,27 +1,25 @@
-//
-//  ShutterButton.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 11.04.2024.
-//
-
 import SwiftUI
 
 struct ShutterButton: View {
     let action: () -> Void
-    let size = UIScreen.main.bounds.width * 0.2
-    
+
     var body: some View {
         Button(action: action) {
-            Image(systemName: "button.programmable")
-                .font(.system(size: CGFloat(size)))
-                .foregroundColor(Color(red: 0.9, green: 0.9, blue: 0.9, opacity: 1))
-                .padding(10)
-                .shadow(radius: 10)
-        }
-    }
-}
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.18))
+                    .frame(width: 82, height: 82)
 
-#Preview {
-    ShutterButton(action: {})
+                Circle()
+                    .strokeBorder(Color.white, lineWidth: 4)
+                    .frame(width: 72, height: 72)
+
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 58, height: 58)
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Captureaza fotografia")
+    }
 }

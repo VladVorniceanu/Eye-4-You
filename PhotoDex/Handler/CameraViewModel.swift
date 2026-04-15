@@ -9,6 +9,7 @@ final class CameraViewModel: ObservableObject {
     let isLiveDetectionFlow: Bool
 
     @Published var isFlashOn = false
+    @Published private(set) var isUsingFrontCamera = false
     @Published var showAlertError = false
     @Published var showSettingAlert = false
     @Published var selectedImage: UIImage?
@@ -19,8 +20,10 @@ final class CameraViewModel: ObservableObject {
     @Published var selectedItems: Set<UUID> = []
     @Published var analysisError: String?
     @Published var isLoadingImage = false
+    @Published var loadingMessage = "Se incarca imaginea..."
     @Published var showingPhotoReview = false
     @Published var focusIndicator = FocusIndicatorState(point: .zero, isVisible: false)
+    @Published var selectedLiveAnalysisRate: LiveAnalysisRate = .ten
     @Published var pickerItem: PhotosPickerItem? {
         didSet {
             guard let pickerItem else { return }
@@ -51,6 +54,7 @@ final class CameraViewModel: ObservableObject {
         self.session = cameraManager.session
         self.isLiveDetectionFlow = isLiveDetectionFlow
         self.isLiveDetectionRunning = isLiveDetectionFlow
+        self.mlFacade.updateLiveAnalysisRate(selectedLiveAnalysisRate)
 
         self.cameraManager.onFrame = { [weak self] sampleBuffer in
             Task { @MainActor [weak self] in
@@ -105,6 +109,7 @@ final class CameraViewModel: ObservableObject {
 
     func switchCamera() {
         cameraManager.switchCamera()
+        isUsingFrontCamera.toggle()
     }
 
     func toggleLiveDetection() {
@@ -124,12 +129,18 @@ final class CameraViewModel: ObservableObject {
         }
     }
 
+    func updateLiveAnalysisRate(_ rate: LiveAnalysisRate) {
+        selectedLiveAnalysisRate = rate
+        mlFacade.updateLiveAnalysisRate(rate)
+    }
+
     func captureImage() {
         guard permissionsManager.galleryPermissionStatus() != .denied else {
             showSettingAlert = true
             return
         }
 
+        loadingMessage = "Se proceseaza captura..."
         isLoadingImage = true
         Task {
             let image = await cameraManager.captureImage()
@@ -158,6 +169,10 @@ final class CameraViewModel: ObservableObject {
     }
 
     private func loadPhoto(from item: PhotosPickerItem) async {
+        loadingMessage = "Se incarca fotografia din galerie..."
+        isLoadingImage = true
+        defer { isLoadingImage = false }
+
         do {
             guard
                 let data = try await item.loadTransferable(type: Data.self),

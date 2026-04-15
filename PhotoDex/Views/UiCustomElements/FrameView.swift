@@ -3,7 +3,8 @@ import SwiftUI
 
 struct FrameView: UIViewRepresentable {
     let session: AVCaptureSession
-    var onTap: (CGPoint) -> Void
+    @Binding var previewRect: CGRect
+    var onTap: (_ previewPoint: CGPoint, _ devicePoint: CGPoint) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -24,7 +25,10 @@ struct FrameView: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ uiView: VideoPreviewView, context: Context) {}
+    func updateUIView(_ uiView: VideoPreviewView, context: Context) {
+        uiView.videoPreviewLayer.session = session
+        context.coordinator.updatePreviewRect(from: uiView)
+    }
 }
 
 extension FrameView {
@@ -45,6 +49,13 @@ extension FrameView {
             self.parent = parent
         }
 
+        func updatePreviewRect(from previewView: VideoPreviewView) {
+            DispatchQueue.main.async {
+                self.parent.previewRect = previewView.videoPreviewLayer
+                    .layerRectConverted(fromMetadataOutputRect: CGRect(x: 0, y: 0, width: 1, height: 1))
+            }
+        }
+
         @objc func handleTapGesture(_ sender: UITapGestureRecognizer) {
             guard let previewView = sender.view as? VideoPreviewView else {
                 return
@@ -52,7 +63,7 @@ extension FrameView {
 
             let location = sender.location(in: previewView)
             let devicePoint = previewView.videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: location)
-            parent.onTap(devicePoint)
+            parent.onTap(location, devicePoint)
         }
     }
 }

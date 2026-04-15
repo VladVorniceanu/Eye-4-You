@@ -50,19 +50,6 @@ struct MLAnalysisView: View {
             }
         }
         .animation(.spring(response: 0.32, dampingFraction: 0.86), value: viewModel.showDrawer)
-        .alert(
-            "Info",
-            isPresented: Binding(
-                get: { viewModel.alertMessage != nil },
-                set: { if !$0 { viewModel.alertMessage = nil } }
-            )
-        ) {
-            Button("OK", role: .cancel) {
-                viewModel.alertMessage = nil
-            }
-        } message: {
-            Text(viewModel.alertMessage ?? "")
-        }
         .onAppear {
             viewModel.onAppear()
         }

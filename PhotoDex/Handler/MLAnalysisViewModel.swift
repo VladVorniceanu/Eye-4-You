@@ -16,7 +16,6 @@ final class MLAnalysisViewModel: ObservableObject {
     @Published var selectedItems: Set<UUID> = []
     @Published var showDrawer = false
     @Published var showPoseOverlay = false
-    @Published var alertMessage: String?
 
     private let image: UIImage
     private let mlFacade: CustomMLModel
@@ -40,9 +39,6 @@ final class MLAnalysisViewModel: ObservableObject {
                 selectedItems = Set(result.predictions.map(\.id))
                 showPoseOverlay = !result.posePoints.isEmpty
                 state = .loaded
-                alertMessage = result.predictions.isEmpty
-                    ? "Nu au fost detectate rezultate."
-                    : "Lista de predicții se găsește în meniul lateral din dreapta."
             } catch {
                 state = .failed(error.localizedDescription)
             }
@@ -50,13 +46,13 @@ final class MLAnalysisViewModel: ObservableObject {
     }
 
     func toggleDrawer() {
-        withAnimation {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
             showDrawer.toggle()
         }
     }
 
     func closeDrawer() {
-        withAnimation {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
             showDrawer = false
         }
     }

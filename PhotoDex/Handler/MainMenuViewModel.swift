@@ -1,5 +1,6 @@
 import PhotosUI
 import SwiftUI
+import UIKit
 
 @MainActor
 final class MainMenuViewModel: ObservableObject {
@@ -14,13 +15,12 @@ final class MainMenuViewModel: ObservableObject {
     @Published private(set) var selectedImage: UIImage?
     @Published private(set) var isShowingPhotoReview = false
     @Published private(set) var modelsLoaded = false
+    @Published private(set) var isLoadingSelectedImage = false
 
-    private let photoPicker: PhotoPicker
     private let mlFacade: CustomMLModel
     private var didInitialize = false
 
-    init(photoPicker: PhotoPicker = PhotoPicker(), mlFacade: CustomMLModel = .shared) {
-        self.photoPicker = photoPicker
+    init(mlFacade: CustomMLModel = .shared) {
         self.mlFacade = mlFacade
     }
 
@@ -38,11 +38,17 @@ final class MainMenuViewModel: ObservableObject {
     }
 
     private func handleSelection(_ item: PhotosPickerItem) async {
-        do {
-            selectedImage = try await photoPicker.loadImage(from: item)
-            isShowingPhotoReview = selectedImage != nil
-        } catch {
-            AppLogger.ui.error("Failed to load gallery image - \(error.localizedDescription)")
+        isLoadingSelectedImage = true
+        defer { isLoadingSelectedImage = false }
+
+        if
+            let data = try? await item.loadTransferable(type: Data.self),
+            let image = UIImage(data: data)
+        {
+            selectedImage = image
+            isShowingPhotoReview = true
+        } else {
+            AppLogger.ui.error("Failed to load gallery image")
         }
     }
 }

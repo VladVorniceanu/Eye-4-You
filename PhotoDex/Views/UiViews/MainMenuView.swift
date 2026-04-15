@@ -7,10 +7,14 @@ struct MainMenuView: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                Color(uiColor: .systemGroupedBackground)
+                    .ignoresSafeArea()
+
                 LinearGradient(
                     colors: [
-                        Color(red: 0.96, green: 0.97, blue: 0.99),
-                        Color(red: 0.90, green: 0.95, blue: 0.98)
+                        Color.accentColor.opacity(0.10),
+                        Color.orange.opacity(0.05),
+                        Color.clear
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -56,6 +60,11 @@ struct MainMenuView: View {
                         )
                     )
                 }
+            }
+        }
+        .overlay {
+            if viewModel.isLoadingSelectedImage {
+                MenuLoadingOverlay(text: "Se incarca fotografia din galerie...")
             }
         }
     }
@@ -106,6 +115,26 @@ struct MainMenuView: View {
                     accentColor: .green
                 )
             }
+        }
+    }
+}
+
+private struct MenuLoadingOverlay: View, Equatable {
+    let text: String
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.35).ignoresSafeArea()
+            VStack(spacing: 12) {
+                ProgressView()
+                    .scaleEffect(1.15)
+                Text(text)
+                    .font(.body.weight(.medium))
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
     }
 }

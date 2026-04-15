@@ -9,12 +9,12 @@ import SwiftUI
 
 struct FocusView: View {
     @Binding var position: CGPoint
-    let size = UIScreen.main.bounds.width * 0.2
+
     var body: some View {
-        Circle()
-            .frame(width: size, height: size)
-            .foregroundColor(.clear)
-            .border(.yellow, width: 1.5)
+        RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .stroke(Color.yellow, lineWidth: 2)
+            .frame(width: 76, height: 76)
+            .shadow(color: .yellow.opacity(0.35), radius: 8)
             .position(x: position.x, y: position.y)
     }
 }

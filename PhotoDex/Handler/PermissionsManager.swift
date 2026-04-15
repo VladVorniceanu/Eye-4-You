@@ -8,51 +8,37 @@
 import AVFoundation
 import PhotosUI
 
-class PermissionsManager {
+final class PermissionsManager {
     static let shared = PermissionsManager()
 
-    func checkAndRequestCameraPermission(completion: @escaping (Bool) -> Void) {
-        let status = AVCaptureDevice.authorizationStatus(for: .video)
-        DispatchQueue.global(qos: .background).async {
-            switch status {
-            case .authorized:
-                completion(true)
-            case .notDetermined:
-                AVCaptureDevice.requestAccess(for: .video) { granted in
-                    DispatchQueue.main.async {
-                        completion(granted)
-                    }
-                }
-            case .denied, .restricted:
-                completion(false)
-            @unknown default:
-                completion(false)
-            }
+    func requestCameraAccess() async -> Bool {
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            return true
+        case .notDetermined:
+            return await AVCaptureDevice.requestAccess(for: .video)
+        case .denied, .restricted:
+            return false
+        @unknown default:
+            return false
         }
-        
     }
 
-    func checkAndRequestGalleryPermission(completion: @escaping (Bool) -> Void) {
-        let status = PHPhotoLibrary.authorizationStatus()
-        DispatchQueue.global(qos: .background).async {
-            switch status {
-            case .authorized, .limited:
-                completion(true)
-            case .notDetermined:
-                PHPhotoLibrary.requestAuthorization { newStatus in
-                    DispatchQueue.main.async {
-                        completion(newStatus == .authorized || newStatus == .limited)
-                    }
-                }
-            case .denied, .restricted:
-                completion(false)
-            @unknown default:
-                completion(false)
-            }
+    func requestGalleryAccess() async -> Bool {
+        switch PHPhotoLibrary.authorizationStatus(for: .readWrite) {
+        case .authorized, .limited:
+            return true
+        case .notDetermined:
+            let status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+            return status == .authorized || status == .limited
+        case .denied, .restricted:
+            return false
+        @unknown default:
+            return false
         }
     }
-    
-    func checkGalleryPermissionStatus() -> PHAuthorizationStatus {
-        return PHPhotoLibrary.authorizationStatus()
+
+    func galleryPermissionStatus() -> PHAuthorizationStatus {
+        PHPhotoLibrary.authorizationStatus(for: .readWrite)
     }
 }

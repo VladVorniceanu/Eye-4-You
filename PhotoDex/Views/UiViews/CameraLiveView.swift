@@ -4,6 +4,7 @@ import SwiftUI
 struct CameraLiveView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel: CameraViewModel
+    @State private var previewRect: CGRect = .zero
 
     init(isLiveDetectionFlow: Bool) {
         _viewModel = StateObject(wrappedValue: CameraViewModel(isLiveDetectionFlow: isLiveDetectionFlow))
@@ -15,13 +16,18 @@ struct CameraLiveView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            FrameView(session: viewModel.session) { previewPoint, devicePoint in
+            FrameView(session: viewModel.session, previewRect: $previewRect) { previewPoint, devicePoint in
                 viewModel.setFocus(previewPoint: previewPoint, devicePoint: devicePoint)
             }
             .overlay {
                 ZStack {
                     if viewModel.isLiveDetectionRunning {
-                        OverlayView(predictions: viewModel.predictions, selectedItems: viewModel.selectedItems)
+                        OverlayView(
+                            predictions: viewModel.predictions,
+                            selectedItems: viewModel.selectedItems,
+                            mirrorHorizontally: viewModel.isUsingFrontCamera,
+                            previewRect: previewRect
+                        )
                     }
 
                     if viewModel.isPoseDetectionRunning {
@@ -41,6 +47,9 @@ struct CameraLiveView: View {
                     subtitle: cameraSubtitle,
                     isFlashOn: viewModel.isFlashOn,
                     flashAction: viewModel.switchFlash,
+                    isLiveDetectionFlow: viewModel.isLiveDetectionFlow,
+                    selectedLiveAnalysisRate: viewModel.selectedLiveAnalysisRate,
+                    onSelectLiveAnalysisRate: viewModel.updateLiveAnalysisRate,
                     backAction: { dismiss() }
                 )
 
@@ -86,7 +95,7 @@ struct CameraLiveView: View {
         }
         .overlay {
             if viewModel.isLoadingImage {
-                LoadingOverlay(text: "Se incarca imaginea...")
+                LoadingOverlay(text: viewModel.loadingMessage)
             }
         }
         .sheet(
@@ -135,6 +144,9 @@ private struct CameraTopBar: View {
     let subtitle: String
     let isFlashOn: Bool
     let flashAction: () -> Void
+    let isLiveDetectionFlow: Bool
+    let selectedLiveAnalysisRate: LiveAnalysisRate
+    let onSelectLiveAnalysisRate: (LiveAnalysisRate) -> Void
     let backAction: () -> Void
 
     var body: some View {
@@ -159,6 +171,26 @@ private struct CameraTopBar: View {
             }
 
             Spacer()
+
+            if isLiveDetectionFlow {
+                Menu {
+                    Picker("Analize pe secunda", selection: Binding(
+                        get: { selectedLiveAnalysisRate },
+                        set: onSelectLiveAnalysisRate
+                    )) {
+                        ForEach(LiveAnalysisRate.allCases) { rate in
+                            Text(rate.label).tag(rate)
+                        }
+                    }
+                } label: {
+                    Label(selectedLiveAnalysisRate.label, systemImage: "speedometer")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .frame(height: 44)
+                        .background(Color.white.opacity(0.12), in: Capsule())
+                }
+            }
 
             FlashButton(isOn: isFlashOn, action: flashAction)
         }

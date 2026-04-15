@@ -1,7 +1,7 @@
 import SwiftUI
 import Vision
 
-struct PoseOverlayView: View, Equatable {
+struct PoseOverlayView: View {
     let points: [VNHumanBodyPoseObservation.JointName: CGPoint]
 
     let bodyPartConnections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [

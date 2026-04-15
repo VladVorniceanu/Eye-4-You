@@ -1,9 +1,9 @@
 import CoreML
 import QuartzCore
 import UIKit
-import Vision
+@preconcurrency import Vision
 
-final class CustomMLModel {
+final class CustomMLModel: @unchecked Sendable {
     static let shared = CustomMLModel()
 
     private let inferenceQueue = DispatchQueue(
@@ -16,8 +16,8 @@ final class CustomMLModel {
     private var yoloModel: VNCoreMLModel?
     private var mobileNetModel: VNCoreMLModel?
     private var lastLiveAnalysisTime: CFTimeInterval = 0
+    private var liveAnalysisRate: LiveAnalysisRate = .ten
 
-    private let liveFrameInterval: CFTimeInterval = 0.3
     private let maxSecondaryAnalyses = 3
 
     private init() {}
@@ -27,7 +27,6 @@ final class CustomMLModel {
             inferenceQueue.async {
                 do {
                     _ = try self.loadModels()
-                    _ = HumanAnalysisManager.shared
                     continuation.resume(returning: true)
                 } catch {
                     AppLogger.analysis.error("ML warm up failed - \(error.localizedDescription)")
@@ -75,6 +74,13 @@ final class CustomMLModel {
             : [:]
 
         return ImageAnalysisResult(predictions: try await predictions, posePoints: await posePoints)
+    }
+
+    func updateLiveAnalysisRate(_ rate: LiveAnalysisRate) {
+        modelLock.lock()
+        defer { modelLock.unlock() }
+        liveAnalysisRate = rate
+        lastLiveAnalysisTime = 0
     }
 
     private func modelsAsync() async throws -> (yolo: VNCoreMLModel, mobileNet: VNCoreMLModel) {
@@ -172,18 +178,11 @@ final class CustomMLModel {
         in image: UIImage,
         mobileNetModel: VNCoreMLModel
     ) async -> Prediction? {
-        guard let boundingBox = prediction.boundingBox else {
-            return prediction
-        }
-
-        if prediction.label == "person" {
-            let crop = cropImage(image: image, boundingBox: boundingBox, padding: 0).scaled(maxDimension: 320)
-            var updatedPrediction = prediction
-            updatedPrediction.humanAnalysis = await HumanAnalysisManager.shared.analyzeHuman(in: crop)
-            return updatedPrediction
-        }
-
-        guard prediction.confidence >= 0.35 else {
+        guard
+            let boundingBox = prediction.boundingBox,
+            prediction.confidence >= 0.35,
+            prediction.label != "person"
+        else {
             return prediction
         }
 
@@ -207,7 +206,7 @@ final class CustomMLModel {
         modelLock.lock()
         defer { modelLock.unlock() }
 
-        guard time - lastLiveAnalysisTime >= liveFrameInterval else {
+        guard time - lastLiveAnalysisTime >= liveAnalysisRate.interval else {
             return false
         }
 
