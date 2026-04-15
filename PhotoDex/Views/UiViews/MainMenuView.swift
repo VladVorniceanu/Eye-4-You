@@ -1,150 +1,163 @@
-//
-//  MainMenuView.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 02.04.2024.
-//
-
-import SwiftUI
 import PhotosUI
+import SwiftUI
 
 struct MainMenuView: View {
-    @StateObject private var viewModel = PhotoPicker()
-    @StateObject private var customMLModel = CustomMLModel.shared
-    @State private var modelsLoaded = false
-    @State private var isLoadingImage = false
-    
+    @StateObject private var viewModel = MainMenuViewModel()
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                Text("PhotoDex")
-                    .font(.largeTitle.bold())
-                    .foregroundColor(.blue)
-                    .padding(.top, 50)
-                
-                VStack(spacing: 20) {
-                    NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: true)) {
-                        HStack {
-                            Image(systemName: "livephoto")
-                                .font(.title)
-                                .padding(.trailing, 10)
-                            Text("Detectează obiecte LIVE")
-                                .fontWeight(.semibold)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                        .shadow(color: .gray, radius: 5, x: 0, y: 5)
-                    }
-                    .opacity(modelsLoaded ? 1.0 : 0.5)
-                    .disabled(!modelsLoaded)
-                    
-                    NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: false)) {
-                        HStack {
-                            Image(systemName: "camera")
-                                .font(.title)
-                                .padding(.trailing, 10)
-                            Text("Capturează o poză")
-                                .fontWeight(.semibold)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                        .shadow(color: .gray, radius: 5, x: 0, y: 5)
-                    }
-                    
-                    PhotosPicker(selection: $viewModel.imageSelection,
-                                 matching: .any(of: [.images, .not(.screenshots)]),
-                                 preferredItemEncoding: .current,
-                                 photoLibrary: .shared()) {
-                        HStack {
-                            Image(systemName: "photo.on.rectangle")
-                                .font(.title)
-                                .padding(.trailing, 10)
-                            Text("Alege din galerie")
-                                .fontWeight(.semibold)
-                        }
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(LinearGradient(gradient: Gradient(colors: [.blue, .purple]), startPoint: .leading, endPoint: .trailing))
-                        .foregroundColor(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                        .shadow(color: .gray, radius: 5, x: 0, y: 5)
-                    }
-                    .onChange(of: viewModel.imageSelection) { _ in
-                        Task {
-                            await loadImage()
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.96, green: 0.97, blue: 0.99),
+                        Color(red: 0.90, green: 0.95, blue: 0.98)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        header
+                        actions
+
+                        if !viewModel.modelsLoaded {
+                            Label("Se pregatesc modelele necesare pentru analiza live.", systemImage: "sparkles")
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 28)
                 }
-                .padding(.horizontal)
-                .padding(.top, 30)
             }
-            .padding(.bottom, 50)
+            .navigationBarHidden(true)
         }
         .onAppear {
-            initializeModels()
+            viewModel.onAppear()
         }
-        .overlay {
-            if isLoadingImage {
-                Color.black.opacity(0.9).ignoresSafeArea()
-                ProgressView("Se încarcă imaginea...")
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .scaleEffect(1.2)
-                    .animation(.easeInOut(duration: 2), value: isLoadingImage)
-            }
-        }
-        .sheet(isPresented: $viewModel.isImageSelected) {
-            NavigationView {
-                if let selectedImage = viewModel.selectedImage {
-                    PhotoReview(image: selectedImage, isPresented: $viewModel.isImageSelected)
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.isShowingPhotoReview },
+                set: { if !$0 { viewModel.dismissPhotoReview() } }
+            )
+        ) {
+            if let selectedImage = viewModel.selectedImage {
+                NavigationStack {
+                    PhotoReview(
+                        image: selectedImage,
+                        isPresented: Binding(
+                            get: { viewModel.isShowingPhotoReview },
+                            set: { if !$0 { viewModel.dismissPhotoReview() } }
+                        )
+                    )
                 }
             }
         }
     }
-    
-    func initializeModels() {
-        CustomMLModel.initializeModels { success in
-            DispatchQueue.main.async {
-                modelsLoaded = success
-            }
-        }
-        DispatchQueue.global(qos: .background).async {
-            _ = HumanAnalysisManager.shared
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("PhotoDex")
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+
+            Text("Analizeaza rapid obiecte din camera sau din galerie, intr-un flux mai usor de inteles si de controlat.")
+                .font(.body)
+                .foregroundStyle(.secondary)
         }
     }
-    
-    func loadImage() async {
-        DispatchQueue.main.async {
-            self.isLoadingImage = true
-        }
-        if let imageSelection = viewModel.imageSelection {
-            do {
-                if let data = try await imageSelection.loadTransferable(type: Data.self) {
-                    if let image = UIImage(data: data) {
-                        DispatchQueue.main.async {
-                            viewModel.selectedImage = image
-                            viewModel.isImageSelected = true
-                            self.isLoadingImage = false
-                        }
-                    }
-                }
-            } catch {
-                print("Error loading image: \(error.localizedDescription)")
-                DispatchQueue.main.async {
-                    self.isLoadingImage = false
-                }
+
+    private var actions: some View {
+        VStack(spacing: 16) {
+            NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: true)) {
+                MenuButtonLabel(
+                    systemImage: "livephoto",
+                    title: "Detectare live",
+                    subtitle: "Porneste camera si urmareste obiectele detectate in timp real.",
+                    accentColor: .blue,
+                    isLoading: !viewModel.modelsLoaded
+                )
+            }
+            .disabled(!viewModel.modelsLoaded)
+
+            NavigationLink(destination: CameraLiveView(isLiveDetectionFlow: false)) {
+                MenuButtonLabel(
+                    systemImage: "camera",
+                    title: "Captureaza o fotografie",
+                    subtitle: "Fa o poza si apoi inspecteaza predictiile pe imaginea salvata.",
+                    accentColor: .orange
+                )
+            }
+
+            PhotosPicker(
+                selection: $viewModel.imageSelection,
+                matching: .any(of: [.images, .not(.screenshots)]),
+                preferredItemEncoding: .current,
+                photoLibrary: .shared()
+            ) {
+                MenuButtonLabel(
+                    systemImage: "photo.on.rectangle",
+                    title: "Alege din galerie",
+                    subtitle: "Importa o imagine existenta si treci direct la analiza ei.",
+                    accentColor: .green
+                )
             }
         }
     }
 }
 
-struct MainMenuView_Previews: PreviewProvider {
-    static var previews: some View {
-        MainMenuView()
+private struct MenuButtonLabel: View, Equatable {
+    let systemImage: String
+    let title: String
+    let subtitle: String
+    let accentColor: Color
+    var isLoading: Bool = false
+
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(accentColor.opacity(0.14))
+                    .frame(width: 56, height: 56)
+
+                if isLoading {
+                    ProgressView()
+                        .tint(accentColor)
+                } else {
+                    Image(systemName: systemImage)
+                        .font(.title2.weight(.semibold))
+                        .foregroundStyle(accentColor)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.leading)
+            }
+
+            Spacer(minLength: 12)
+
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+        }
+        .shadow(color: Color.black.opacity(0.06), radius: 18, y: 10)
     }
 }

@@ -1,109 +1,201 @@
-//
-//  CameraViewModel.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 05.04.2024.
-//
-
-import Combine
-import SwiftUI
-import Photos
 import AVFoundation
+import PhotosUI
+import SwiftUI
+import Vision
 
-class CameraViewModel : ObservableObject {
-    //MARK: - Variables declaration
-    @ObservedObject var cameraManager = CameraManager()
-    var session: AVCaptureSession = .init()
-    private var cancelables = Set<AnyCancellable>()
+@MainActor
+final class CameraViewModel: ObservableObject {
+    let session: AVCaptureSession
+    let isLiveDetectionFlow: Bool
+
     @Published var isFlashOn = false
     @Published var showAlertError = false
     @Published var showSettingAlert = false
-    @Published var isPermissionGranted: Bool = false
-    @Published var capturedImage: UIImage?
+    @Published var selectedImage: UIImage?
     @Published var isLiveDetectionRunning = false
-    var alertError: AlertError!
-    
-    //MARK: - Initialiser and deinitialiser
-    init() {
-        session = cameraManager.session
+    @Published var isPoseDetectionRunning = false
+    @Published var predictions: [Prediction] = []
+    @Published var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
+    @Published var selectedItems: Set<UUID> = []
+    @Published var analysisError: String?
+    @Published var isLoadingImage = false
+    @Published var showingPhotoReview = false
+    @Published var focusIndicator = FocusIndicatorState(point: .zero, isVisible: false)
+    @Published var pickerItem: PhotosPickerItem? {
+        didSet {
+            guard let pickerItem else { return }
+            Task {
+                await loadPhoto(from: pickerItem)
+            }
+        }
     }
-    
+
+    var alertError = AlertError()
+
+    private let cameraManager: CameraManager
+    private let permissionsManager: PermissionsManager
+    private let mlFacade: CustomMLModel
+
+    private var hasAppeared = false
+    private var isAnalyzingFrame = false
+
+    init(
+        isLiveDetectionFlow: Bool,
+        cameraManager: CameraManager = CameraManager(),
+        permissionsManager: PermissionsManager = .shared,
+        mlFacade: CustomMLModel = .shared
+    ) {
+        self.cameraManager = cameraManager
+        self.permissionsManager = permissionsManager
+        self.mlFacade = mlFacade
+        self.session = cameraManager.session
+        self.isLiveDetectionFlow = isLiveDetectionFlow
+        self.isLiveDetectionRunning = isLiveDetectionFlow
+
+        self.cameraManager.onFrame = { [weak self] sampleBuffer in
+            Task { @MainActor [weak self] in
+                await self?.handleIncomingFrame(sampleBuffer)
+            }
+        }
+    }
+
     deinit {
         cameraManager.stopCapturing()
     }
-    
-    //MARK: - Configuration Setup
-    func setupBindings() {
-        cameraManager.$shouldShowAlertView.sink { [weak self] value in
-            DispatchQueue.main.async {
-                self?.alertError = self?.cameraManager.alertError
-                self?.showAlertError = value
-            }
-        }
-        .store(in: &cancelables)
-        
-        cameraManager.$capturedImage.sink { [weak self] image in
-            DispatchQueue.main.async {
-                self?.capturedImage = image
-            }
-        }.store(in: &cancelables)
-    }
-    
-    func configureCamera() {
-        checkAndRequestPermissions()
-        cameraManager.setUpCaptureSession()
-    }
-    
-    //MARK: - Permission Requests
-    func checkAndRequestPermissions() {
-            PermissionsManager.shared.checkAndRequestCameraPermission { [weak self] granted in
-                guard let self = self else { return }
-                DispatchQueue.main.async {
-                    if granted {
-                        self.isPermissionGranted = true
-                        self.cameraManager.setUpCaptureSession()
-                    } else {
-                        self.showSettingAlert = true
-                    }
-                }
+
+    func onAppear() {
+        guard !hasAppeared else { return }
+        hasAppeared = true
+
+        Task {
+            async let cameraAccess = permissionsManager.requestCameraAccess()
+            async let galleryAccess = permissionsManager.requestGalleryAccess()
+            async let modelsReady = mlFacade.warmUp()
+
+            let hasCameraAccess = await cameraAccess
+            let hasGalleryAccess = await galleryAccess
+            let _ = await modelsReady
+
+            if hasCameraAccess {
+                cameraManager.setUpCaptureSession()
+            } else {
+                showSettingAlert = true
             }
 
-            PermissionsManager.shared.checkAndRequestGalleryPermission { [weak self] granted in
-                guard let self = self else { return }
-                DispatchQueue.main.async {
-                    if !granted {
-                        self.showSettingAlert = true
-                    }
-                }
+            if !hasGalleryAccess {
+                showSettingAlert = true
             }
         }
-    
-    //MARK: - Functional Methods
+    }
+
     func switchFlash() {
         isFlashOn.toggle()
         cameraManager.toggleTorch(torchIsOn: isFlashOn)
     }
-    
-    func setFocus(point: CGPoint) {
-        cameraManager.setFocusOnTap(devicePoint: point)
-    }
-    
-    func switchCamera() {
-        cameraManager.position = cameraManager.position == .back ? .front : .back
-        cameraManager.switchCamera()
-    }
-    
-    func toggleLiveDetection() {
-        DispatchQueue.main.async {
-            self.isLiveDetectionRunning.toggle()
-            self.cameraManager.isLiveDetectionFlow = self.isLiveDetectionRunning
+
+    func setFocus(previewPoint: CGPoint, devicePoint: CGPoint) {
+        cameraManager.setFocusOnTap(devicePoint: devicePoint)
+        focusIndicator = FocusIndicatorState(point: previewPoint, isVisible: true)
+
+        Task {
+            try? await Task.sleep(nanoseconds: 700_000_000)
+            focusIndicator.isVisible = false
         }
     }
-      
-    func captureImage(completion: @escaping (UIImage?) -> Void) {
-        let permission = PermissionsManager.shared.checkGalleryPermissionStatus()
-        if permission.rawValue != 2 {
-            cameraManager.captureImage(completion: completion)
+
+    func switchCamera() {
+        cameraManager.switchCamera()
+    }
+
+    func toggleLiveDetection() {
+        isLiveDetectionRunning.toggle()
+        if isLiveDetectionRunning {
+            selectedItems = Set(predictions.map(\.id))
+        } else {
+            predictions = []
+            selectedItems = []
+        }
+    }
+
+    func togglePoseDetection() {
+        isPoseDetectionRunning.toggle()
+        if !isPoseDetectionRunning {
+            posePoints = [:]
+        }
+    }
+
+    func captureImage() {
+        guard permissionsManager.galleryPermissionStatus() != .denied else {
+            showSettingAlert = true
+            return
+        }
+
+        isLoadingImage = true
+        Task {
+            let image = await cameraManager.captureImage()
+            isLoadingImage = false
+
+            guard let image else {
+                analysisError = "Imaginea nu a putut fi capturata."
+                return
+            }
+
+            selectedImage = image
+            showingPhotoReview = true
+        }
+    }
+
+    func dismissPhotoReview() {
+        showingPhotoReview = false
+    }
+
+    func toggleSelection(for predictionID: UUID, isSelected: Bool) {
+        if isSelected {
+            selectedItems.insert(predictionID)
+        } else {
+            selectedItems.remove(predictionID)
+        }
+    }
+
+    private func loadPhoto(from item: PhotosPickerItem) async {
+        do {
+            guard
+                let data = try await item.loadTransferable(type: Data.self),
+                let image = UIImage(data: data)
+            else {
+                analysisError = "Imaginea selectata nu a putut fi incarcata."
+                return
+            }
+
+            selectedImage = image
+            showingPhotoReview = true
+        } catch {
+            analysisError = error.localizedDescription
+        }
+    }
+
+    private func handleIncomingFrame(_ sampleBuffer: CMSampleBuffer) async {
+        guard (isLiveDetectionRunning || isPoseDetectionRunning), !isAnalyzingFrame else {
+            return
+        }
+
+        isAnalyzingFrame = true
+        defer { isAnalyzingFrame = false }
+
+        do {
+            guard let result = try await mlFacade.analyzeLiveFrame(
+                sampleBuffer: sampleBuffer,
+                detectObjects: isLiveDetectionRunning,
+                detectPose: isPoseDetectionRunning
+            ) else {
+                return
+            }
+
+            predictions = result.predictions
+            posePoints = result.posePoints
+            selectedItems = Set(result.predictions.map(\.id))
+        } catch {
+            analysisError = error.localizedDescription
         }
     }
 }

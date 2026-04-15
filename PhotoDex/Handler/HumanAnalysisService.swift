@@ -1,9 +1,9 @@
 import CoreML
 import UIKit
-import Vision
+@preconcurrency import Vision
 
-final class HumanAnalysisManager {
-    static let shared = HumanAnalysisManager()
+final class HumanAnalysisService: @unchecked Sendable {
+    static let shared = HumanAnalysisService()
 
     private let ageModel: VNCoreMLModel
     private let genderModel: VNCoreMLModel
@@ -24,7 +24,7 @@ final class HumanAnalysisManager {
 
     func analyzeHuman(in image: UIImage) async -> HumanAnalysisResult? {
         guard let cgImage = image.fixedOrientation()?.cgImage ?? image.cgImage else {
-            AppLogger.analysis.error("HumanAnalysisManager: invalid CGImage")
+            AppLogger.analysis.error("HumanAnalysisService: invalid CGImage")
             return nil
         }
 
@@ -55,7 +55,7 @@ final class HumanAnalysisManager {
 
                     continuation.resume(returning: HumanAnalysisResult(age: age, gender: gender, emotion: emotion))
                 } catch {
-                    AppLogger.analysis.error("HumanAnalysisManager: perform failed - \(error.localizedDescription)")
+                    AppLogger.analysis.error("HumanAnalysisService: perform failed - \(error.localizedDescription)")
                     continuation.resume(returning: nil)
                 }
             }

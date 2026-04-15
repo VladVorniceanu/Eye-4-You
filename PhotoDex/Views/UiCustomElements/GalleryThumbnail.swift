@@ -1,55 +1,29 @@
-//
-//  Gallery.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 11.04.2024.
-//
-
 import SwiftUI
 
 struct GalleryThumbnail: View {
     @Binding var image: UIImage?
-    let size = UIScreen.main.bounds.width * 0.15
-    
+
     var body: some View {
-        if let image {
-            Image(
-                uiImage: image
-            )
-            .resizable()
-            .aspectRatio(
-                contentMode: .fill
-            )
-            .frame(
-                width: size,
-                height: size
-            )
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: 10,
-                    style: .continuous
-                )
-            )
-        } else {
-            Circle()
-                .foregroundStyle(
-                    Color.gray.opacity(
-                        0.2
-                    )
-                )
-                .frame(
-                    width: size,
-                    height: size,
-                    alignment: .center
-                )
-                .overlay {
-                    Image(
-                        systemName: "photo.on.rectangle.fill"
-                    )
-                    .foregroundStyle(
-                        .white
-                    )
+        Group {
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(Color.white.opacity(0.12))
+                    Image(systemName: "photo.on.rectangle.angled")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
                 }
+            }
+        }
+        .frame(width: 72, height: 72)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.18), lineWidth: 1)
         }
     }
 }

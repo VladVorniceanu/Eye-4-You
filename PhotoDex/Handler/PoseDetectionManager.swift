@@ -1,48 +1,80 @@
-//
-//  PoseDetectionManager.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 23.06.2024.
-//
-
-import Vision
+import ImageIO
 import UIKit
+import Vision
 
-class PoseDetectionManager {
+final class PoseDetectionManager {
     static let shared = PoseDetectionManager()
 
-    private var poseDetectionRequest: VNDetectHumanBodyPoseRequest!
+    func detectPose(in image: UIImage) async -> [VNHumanBodyPoseObservation.JointName: CGPoint] {
+        guard let fixedImage = image.fixedOrientation(), let cgImage = fixedImage.cgImage else {
+            return [:]
+        }
 
-    init() {
-        poseDetectionRequest = VNDetectHumanBodyPoseRequest()
+        return await detectPose(cgImage: cgImage, orientation: .up)
     }
 
-    func detectPose(in image: UIImage, completion: @escaping ([VNHumanBodyPoseObservation.JointName: CGPoint]?) -> Void) {
-        guard let fixedImage = image.fixedOrientation(), let cgImage = fixedImage.cgImage else {
-            completion(nil)
-            return
+    func detectPose(
+        sampleBuffer: CMSampleBuffer,
+        orientation: CGImagePropertyOrientation
+    ) async -> [VNHumanBodyPoseObservation.JointName: CGPoint] {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
+            return [:]
         }
 
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        do {
-            try handler.perform([poseDetectionRequest])
-            guard let results = poseDetectionRequest.results as? [VNHumanBodyPoseObservation] else {
-                completion(nil)
-                return
-            }
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                let request = VNDetectHumanBodyPoseRequest()
+                let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, orientation: orientation, options: [:])
 
-            var points: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
-            for result in results {
-                guard let recognizedPoints = try? result.recognizedPoints(.all) else { continue }
-                for (jointName, point) in recognizedPoints {
-                    if point.confidence > 0.1 {
-                        points[jointName] = CGPoint(x: point.location.x, y: 1 - point.location.y)
-                    }
+                do {
+                    try handler.perform([request])
+                    continuation.resume(returning: Self.extractPoints(from: request.results))
+                } catch {
+                    AppLogger.analysis.error("PoseDetectionManager: detectPose failed - \(error.localizedDescription)")
+                    continuation.resume(returning: [:])
                 }
             }
-            completion(points)
-        } catch {
-            completion(nil)
         }
+    }
+
+    private func detectPose(
+        cgImage: CGImage,
+        orientation: CGImagePropertyOrientation
+    ) async -> [VNHumanBodyPoseObservation.JointName: CGPoint] {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .utility).async {
+                let request = VNDetectHumanBodyPoseRequest()
+                let handler = VNImageRequestHandler(cgImage: cgImage, orientation: orientation, options: [:])
+
+                do {
+                    try handler.perform([request])
+                    continuation.resume(returning: Self.extractPoints(from: request.results))
+                } catch {
+                    AppLogger.analysis.error("PoseDetectionManager: detectPose failed - \(error.localizedDescription)")
+                    continuation.resume(returning: [:])
+                }
+            }
+        }
+    }
+
+    private static func extractPoints(
+        from observations: [VNHumanBodyPoseObservation]?
+    ) -> [VNHumanBodyPoseObservation.JointName: CGPoint] {
+        guard let observations else {
+            return [:]
+        }
+
+        var points: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
+        for observation in observations {
+            guard let recognizedPoints = try? observation.recognizedPoints(.all) else {
+                continue
+            }
+
+            for (jointName, point) in recognizedPoints where point.confidence > 0.15 {
+                points[jointName] = CGPoint(x: point.location.x, y: 1 - point.location.y)
+            }
+        }
+
+        return points
     }
 }

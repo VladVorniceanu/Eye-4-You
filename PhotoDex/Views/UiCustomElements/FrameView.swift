@@ -1,34 +1,12 @@
-//  FrameView.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 11.03.2024.
-//
-
-import SwiftUI
 import AVFoundation
-import Vision
+import SwiftUI
 
 struct FrameView: UIViewRepresentable {
-    @Binding var isLiveDetectionFlow: Bool
     let session: AVCaptureSession
-    @Binding var predictions: [CustomMLModel.Prediction]
-    @Binding var analysisError: Error?
-    @Binding var isPoseDetectionRunning: Bool
-    @Binding var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint]
     var onTap: (CGPoint) -> Void
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
-    }
-    
-    class VideoPreviewView: UIView {
-        override class var layerClass: AnyClass {
-            AVCaptureVideoPreviewLayer.self
-        }
-        
-        var videoPreviewLayer: AVCaptureVideoPreviewLayer {
-            return layer as! AVCaptureVideoPreviewLayer
-        }
     }
 
     func makeUIView(context: Context) -> VideoPreviewView {
@@ -37,69 +15,44 @@ struct FrameView: UIViewRepresentable {
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspect
         view.videoPreviewLayer.connection?.videoRotationAngle = 90
-        
-        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(context.coordinator.handleTapGesture(_:)))
+
+        let tapGesture = UITapGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handleTapGesture(_:))
+        )
         view.addGestureRecognizer(tapGesture)
-        
-        context.coordinator.setupVideoOutput()
-        
         return view
     }
-    
-    func updateUIView(_ uiView: VideoPreviewView, context: Context) {
+
+    func updateUIView(_ uiView: VideoPreviewView, context: Context) {}
+}
+
+extension FrameView {
+    final class VideoPreviewView: UIView {
+        override class var layerClass: AnyClass {
+            AVCaptureVideoPreviewLayer.self
+        }
+
+        var videoPreviewLayer: AVCaptureVideoPreviewLayer {
+            layer as! AVCaptureVideoPreviewLayer
+        }
     }
-    
-    class Coordinator: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+
+    final class Coordinator: NSObject {
         var parent: FrameView
-        
+
         init(parent: FrameView) {
             self.parent = parent
         }
-        
-        func setupVideoOutput() {
-            let videoOutput = AVCaptureVideoDataOutput()
-            videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "videoQueue"))
-            parent.session.addOutput(videoOutput)
-        }
-        
+
         @objc func handleTapGesture(_ sender: UITapGestureRecognizer) {
-            let location = sender.location(in: sender.view)
-            parent.onTap(location)
-        }
-        
-        func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-            guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-            
-            if !parent.isLiveDetectionFlow && !parent.isPoseDetectionRunning {
+            guard let previewView = sender.view as? VideoPreviewView else {
                 return
             }
-            
-            let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-            let context = CIContext(options: nil)
-            guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else { return }
-            let uiImage = UIImage(cgImage: cgImage).rotated(byDegrees: 90)!
-            
-            if parent.isPoseDetectionRunning {
-                PoseDetectionManager.shared.detectPose(in: uiImage) { points in
-                    DispatchQueue.main.async {
-                        self.parent.posePoints = points ?? [:]
-                    }
-                }
-            } else if parent.isLiveDetectionFlow {
-                DispatchQueue.global().async {
-                    YoloCoreML.makePredictionsUsingYOLO(for: uiImage, model: CustomMLModel.yoloModel) { result in
-                        DispatchQueue.main.async {
-                            switch result {
-                            case .success(let predictions):
-                                self.parent.predictions = predictions
-                            case .failure(let error):
-                                self.parent.analysisError = error
-                                print("YOLO Live Analysis Error: \(error.localizedDescription)")
-                            }
-                        }
-                    }
-                }
-            }
+
+            let location = sender.location(in: previewView)
+            let devicePoint = previewView.videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: location)
+            parent.onTap(devicePoint)
         }
     }
 }

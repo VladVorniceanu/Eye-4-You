@@ -4,202 +4,245 @@ import Vision
 struct MLAnalysisView: View {
     let image: UIImage
     @Binding var isPresented: Bool
-    @State private var predictions: [CustomMLModel.Prediction] = []
-    @State private var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
-    @State private var analysisErrors: Error?
-    @State private var isAnalyzing: Bool = true
-    @State private var showPoseOverlay: Bool = false
-    @State private var selectedItems: Set<UUID> = []
-    @State private var showDrawer: Bool = false
-    @State private var showAlert: Bool = false
-    @State private var alertMessage: String = ""
-    
+    @StateObject private var viewModel: MLAnalysisViewModel
+
+    init(image: UIImage, isPresented: Binding<Bool>) {
+        self.image = image
+        self._isPresented = isPresented
+        _viewModel = StateObject(wrappedValue: MLAnalysisViewModel(image: image))
+    }
+
     var body: some View {
-        ZStack {
-            NavigationStack {
-                GeometryReader { geometry in
-                    VStack {
-                        if isAnalyzing {
-                            ProgressView("Se analizează...")
-                                .padding()
-                        } else if let error = analysisErrors {
-                            Text("Error: \(error.localizedDescription)")
-                                .foregroundColor(.red)
-                                .padding()
-                        } else {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: geometry.size.width)
-                                .clipped()
-                                .overlay(predictionOverlay())
-                            
-                            if predictions.isEmpty {
-                                Button("Verifică rezultatele") {
-                                    alertMessage = "Nu au fost detectate rezultate."
-                                    showAlert = true
-                                }
-                                .padding()
-                                .background(Color.red)
-                                .foregroundColor(.white)
-                                .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                            } else {
-                                Spacer()
-                                HStack(alignment: .center, content: {
-                                    Spacer()
-                                    Button("Vezi predicțiile") {
-                                        showDrawer.toggle()
-                                        alertMessage = "Lista de predicții se găsește în meniul lateral din dreapta."
-                                        showAlert = true
-                                    }
-                                    .padding()
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 25.0, style: .continuous))
-                                    
-                                    Spacer()
-                                    
-                                    PoseDetectSwitch(action: {
-                                        showPoseOverlay.toggle()
-                                    })
-                                    .padding()
-                                    Spacer()
-                                })
-                            }
-                        }
-                    }
-                    .onAppear {
-                        performAnalysis()
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                    .padding(.all, 0)
+        ZStack(alignment: .trailing) {
+            Color(uiColor: .systemGroupedBackground).ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    content
                 }
-                .navigationTitle("Rezultatele analizei")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: {
-                            withAnimation {
-                                showDrawer.toggle()
-                            }
-                        }) {
-                            Image(systemName: showDrawer ? "xmark" : "line.3.horizontal")
-                        }
-                        .buttonStyle(PlainButtonStyle())
-                        .animation(.easeInOut, value: showDrawer)
+                .padding(20)
+            }
+
+            if viewModel.showDrawer {
+                Color.black.opacity(0.24)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        viewModel.closeDrawer()
                     }
+                    .transition(.opacity)
+            }
+
+            SideMenuPredictions(
+                isPresented: $viewModel.showDrawer,
+                predictions: viewModel.predictions,
+                selectedItems: viewModel.selectedItems,
+                onSelectionChanged: viewModel.toggleSelection
+            )
+        }
+        .navigationTitle("Rezultate")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: viewModel.toggleDrawer) {
+                    Image(systemName: viewModel.showDrawer ? "xmark" : "slider.horizontal.3")
                 }
-                .gesture(
-                    DragGesture(minimumDistance: 20)
-                        .onEnded { value in
-                            if value.translation.width < -50 {
-                                withAnimation {
-                                    showDrawer = true
-                                }
-                            } else if value.translation.width > 50 {
-                                withAnimation {
-                                    showDrawer = false
-                                }
-                            }
-                        }
+                .accessibilityLabel(viewModel.showDrawer ? "Inchide predictiile" : "Deschide predictiile")
+            }
+        }
+        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: viewModel.showDrawer)
+        .alert(
+            "Info",
+            isPresented: Binding(
+                get: { viewModel.alertMessage != nil },
+                set: { if !$0 { viewModel.alertMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                viewModel.alertMessage = nil
+            }
+        } message: {
+            Text(viewModel.alertMessage ?? "")
+        }
+        .onAppear {
+            viewModel.onAppear()
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch viewModel.state {
+        case .idle, .loading:
+            AnalysisLoadingView()
+        case .failed(let message):
+            AnalysisStatusCard(
+                title: "Analiza nu a putut fi finalizata",
+                message: message,
+                systemImage: "exclamationmark.triangle"
+            )
+        case .loaded:
+            AnalysisSummaryCard(
+                predictionCount: viewModel.predictions.count,
+                selectedCount: viewModel.selectedItems.count,
+                showPoseOverlay: viewModel.showPoseOverlay,
+                onToggleDrawer: viewModel.toggleDrawer,
+                onTogglePose: viewModel.togglePoseOverlay
+            )
+
+            AnalysisCanvas(
+                image: image,
+                predictions: viewModel.predictions,
+                selectedItems: viewModel.selectedItems,
+                showPoseOverlay: viewModel.showPoseOverlay,
+                posePoints: viewModel.posePoints
+            )
+
+            if viewModel.predictions.isEmpty {
+                AnalysisStatusCard(
+                    title: "Nu au fost gasite rezultate",
+                    message: "Incearca o imagine cu subiecte mai clare sau un cadru mai bine luminat.",
+                    systemImage: "eye.slash"
                 )
             }
-            
-            if showDrawer {
-                Color.black.opacity(showDrawer ? 0.5 : 0)
-                    .ignoresSafeArea()
-                    .animation(.easeInOut, value: showDrawer)
-                    .onTapGesture {
-                        withAnimation {
-                            showDrawer = false
-                        }
-                    }
-            }
-            
-            if showDrawer {
-                SideMenuPredictions(isPresented: $showDrawer, predictions: $predictions, selectedItems: $selectedItems)
-                    .transition(.move(edge: .trailing))
-            }
-        }
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    if value.translation.width > 50 {
-                        withAnimation {
-                            showDrawer = false
-                        }
-                    }
-                }
-        )
-    }
-    
-    private func performAnalysis() {
-        let mlModel = CustomMLModel.shared
-        DispatchQueue.global(qos: .background).async {
-            mlModel.makePredictionsUsingYOLOAndMobileNet(for: image) { predictions, posePoints in
-                DispatchQueue.main.async {
-                    if let predictions = predictions {
-                        self.predictions = predictions
-                        self.isAnalyzing = false
-                        if predictions.isEmpty {
-                            alertMessage = "Nu au fost detectate rezultate."
-                            showAlert = true
-                        } else {
-                            alertMessage = "Lista de predicții se găsește în meniul lateral din dreapta."
-                            showAlert = true
-                        }
-                    } else {
-                        self.analysisErrors = NSError(domain: "Prediction Error", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to get predictions."])
-                        self.isAnalyzing = false
-                    }
-                    self.posePoints = posePoints ?? [:]
-                }
-            }
         }
     }
-    
-    private func predictionOverlay() -> some View {
-        GeometryReader { geometry in
-            ZStack {
-                if showPoseOverlay {
-                    PoseOverlayView(points: $posePoints)
-                }
-                
-                ForEach(predictions.indices, id: \.self) { index in
-                    let prediction = self.predictions[index]
-                    
-                    if selectedItems.contains(prediction.id), let boundingBox = prediction.boundingBox {
-                        let x = boundingBox.origin.x * geometry.size.width
-                        let y = (1 - boundingBox.origin.y - boundingBox.size.height) * geometry.size.height
-                        let width = boundingBox.size.width * geometry.size.width
-                        let height = boundingBox.size.height * geometry.size.height
-                        
-                        Rectangle()
-                            .stroke(Color(hue: Double(index) / Double(self.predictions.count), saturation: 1, brightness: 1), lineWidth: 2)
-                            .frame(width: width, height: height)
-                            .position(x: x + width / 2, y: y + height / 2)
+}
 
-                        if let humanAnalysis = prediction.humanAnalysis {
-                            VStack {
-                                Text("Vârsta: \(humanAnalysis.age) ani")
-                                Text("Sex: \(humanAnalysis.gender == "Female" ? "Femeie" : "Bărbat")")
-                                Text("Emotion: \(humanAnalysis.emotion)")
-                            }
-                            .padding(5)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(10)
-                            .position(x: x + width / 2, y: y + height - 20)
-                        } else {
-                            Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
-                                .foregroundColor(.white)
-                                .padding(2)
-                                .background(Color.black.opacity(0.7))
-                                .cornerRadius(10)
-                                .position(x: x + width / 2, y: y + height)
-                        }
-                    }
+private struct AnalysisLoadingView: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            ProgressView()
+                .scaleEffect(1.2)
+            Text("Se analizeaza imaginea...")
+                .font(.headline)
+            Text("Procesul poate dura cateva secunde, in functie de continutul fotografiei.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 36)
+        .padding(.horizontal, 20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+private struct AnalysisSummaryCard: View {
+    let predictionCount: Int
+    let selectedCount: Int
+    let showPoseOverlay: Bool
+    let onToggleDrawer: () -> Void
+    let onTogglePose: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Rezumat analiza")
+                .font(.headline)
+
+            HStack(spacing: 12) {
+                SummaryMetric(title: "Detectate", value: "\(predictionCount)", tint: .blue)
+                SummaryMetric(title: "Afisate", value: "\(selectedCount)", tint: .green)
+                SummaryMetric(title: "Postura", value: showPoseOverlay ? "On" : "Off", tint: .orange)
+            }
+
+            HStack(spacing: 12) {
+                Button(action: onToggleDrawer) {
+                    Label("Vezi predictiile", systemImage: "list.bullet.rectangle")
+                        .frame(maxWidth: .infinity)
                 }
+                .buttonStyle(AnalysisActionButtonStyle(tint: .accentColor))
+
+                Button(action: onTogglePose) {
+                    Label(showPoseOverlay ? "Ascunde postura" : "Afiseaza postura", systemImage: "figure.walk")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(AnalysisActionButtonStyle(tint: .orange))
             }
         }
+        .padding(18)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+private struct SummaryMetric: View {
+    let title: String
+    let value: String
+    let tint: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(tint)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct AnalysisCanvas: View {
+    let image: UIImage
+    let predictions: [Prediction]
+    let selectedItems: Set<UUID>
+    let showPoseOverlay: Bool
+    let posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint]
+
+    var body: some View {
+        Image(uiImage: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .background(Color.black, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay {
+                ZStack {
+                    if showPoseOverlay {
+                        PoseOverlayView(points: posePoints)
+                    }
+                    OverlayView(predictions: predictions, selectedItems: selectedItems)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            }
+            .shadow(color: Color.black.opacity(0.1), radius: 18, y: 10)
+    }
+}
+
+private struct AnalysisStatusCard: View {
+    let title: String
+    let message: String
+    let systemImage: String
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.headline)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
+        .padding(.horizontal, 20)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+}
+
+private struct AnalysisActionButtonStyle: ButtonStyle {
+    let tint: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .background(tint.opacity(configuration.isPressed ? 0.75 : 1), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .foregroundStyle(.white)
     }
 }

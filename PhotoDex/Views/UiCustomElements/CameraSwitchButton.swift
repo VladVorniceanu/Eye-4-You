@@ -1,38 +1,20 @@
-//
-//  CameraSwitchButton.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 11.04.2024.
-//
-
 import SwiftUI
 
 struct CameraSwitchButton: View {
-    var action: () -> Void
-    let size = UIScreen.main.bounds.width * 0.15
-    
+    let action: () -> Void
+
     var body: some View {
-        Button(action: action,
-               label: {
-            Circle()
-                .foregroundStyle(
-                    Color.gray.opacity(0.2)
-                )
-                .frame(
-                    width: size,
-                    height: size,
-                    alignment: .center
-                )
-                .overlay {
-                    Image(
-                        systemName: "camera.rotate.fill"
-                    )
-                    .foregroundStyle(.white)
-                }
-        })
-    }
-}
-#Preview {
-    CameraSwitchButton {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: "camera.rotate.fill")
+                    .font(.title3.weight(.semibold))
+                Text("Camera")
+                    .font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(.white)
+            .frame(width: 88, height: 72)
+            .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }

@@ -1,9 +1,9 @@
 import SwiftUI
 import Vision
 
-struct PoseOverlayView: View {
-    @Binding var points: [VNHumanBodyPoseObservation.JointName: CGPoint]
-    
+struct PoseOverlayView: View, Equatable {
+    let points: [VNHumanBodyPoseObservation.JointName: CGPoint]
+
     let bodyPartConnections: [(VNHumanBodyPoseObservation.JointName, VNHumanBodyPoseObservation.JointName)] = [
         (.neck, .leftShoulder), (.neck, .rightShoulder),
         (.leftShoulder, .leftElbow), (.rightShoulder, .rightElbow),
@@ -13,7 +13,7 @@ struct PoseOverlayView: View {
         (.leftHip, .leftKnee), (.rightHip, .rightKnee),
         (.leftKnee, .leftAnkle), (.rightKnee, .rightAnkle)
     ]
-    
+
     let orderedJoints: [VNHumanBodyPoseObservation.JointName] = [
         .neck, .leftShoulder, .rightShoulder,
         .leftElbow, .rightElbow,
@@ -23,7 +23,7 @@ struct PoseOverlayView: View {
         .leftKnee, .rightKnee,
         .leftAnkle, .rightAnkle
     ]
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -35,7 +35,7 @@ struct PoseOverlayView: View {
                             .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
                     }
                 }
-                
+
                 Path { path in
                     for (jointA, jointB) in bodyPartConnections {
                         if let pointA = points[jointA], let pointB = points[jointB] {
@@ -45,7 +45,7 @@ struct PoseOverlayView: View {
                     }
                 }
                 .stroke(Color.gray.opacity(0.5), lineWidth: 10)
-                
+
                 ForEach(orderedJoints, id: \.self) { key in
                     if let point = points[key] {
                         Circle()
@@ -54,7 +54,7 @@ struct PoseOverlayView: View {
                             .position(x: point.x * geometry.size.width, y: point.y * geometry.size.height)
                     }
                 }
-                
+
                 Path { path in
                     for (jointA, jointB) in bodyPartConnections {
                         if let pointA = points[jointA], let pointB = points[jointB] {

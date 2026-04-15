@@ -1,15 +1,6 @@
-//
-//  CameraManager.swift
-//  PhotoDex
-//
-//  Created by Vlad Vorniceanu on 11.03.2024.
-//
-
-import Foundation
 import AVFoundation
-import CoreImage
-import UIKit
 import SwiftUI
+import UIKit
 
 enum Status {
     case configured
@@ -18,31 +9,30 @@ enum Status {
     case failed
 }
 
-class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
-    @Published var isLiveDetectionFlow: Bool = false
+final class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published private var flashMode: AVCaptureDevice.FlashMode = .off
     @Published var status = Status.unconfigured
     @Published var shouldShowAlertView = false
-    @Published var capturedImage: UIImage? = nil
-    @Published var frame: UIImage? = nil
-    @Published var predictions: [CustomMLModel.Prediction] = []
-    @Published var analysisError: Error? = nil
-    private var cameraDelegate: CameraDelegate?
-    private let sessionQueue = DispatchQueue(label: "com.PhotoDex.sessionQueue")
-    private let queue = DispatchQueue(label: "camera-queue")
-    private let customMLModel = CustomMLModel.shared
+    @Published var capturedImage: UIImage?
+
     let session = AVCaptureSession()
     let photoOutput = AVCapturePhotoOutput()
     let videoOutput = AVCaptureVideoDataOutput()
+
     var videoDeviceInput: AVCaptureDeviceInput?
     var position: AVCaptureDevice.Position = .back
-    var alertError: AlertError = AlertError()
-    
-    //MARK: - Setuping session and devices input
+    var alertError = AlertError()
+    var onFrame: ((CMSampleBuffer) -> Void)?
+
+    private var cameraDelegate: CameraDelegate?
+    private let sessionQueue = DispatchQueue(label: "com.PhotoDex.sessionQueue")
+    private let videoOutputQueue = DispatchQueue(label: "com.PhotoDex.camera.videoOutput", qos: .userInitiated)
+
     func setUpCaptureSession() {
-        self.sessionQueue.async { [weak self] in
+        sessionQueue.async { [weak self] in
             guard let self, self.status == .unconfigured else { return }
-            session.beginConfiguration()
+
+            self.session.beginConfiguration()
             self.session.sessionPreset = .photo
             self.setupVideoInput()
             self.setupPhotoOutput()
@@ -52,196 +42,189 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
         }
     }
 
-    private func setupVideoInput() {
-        do {
-            let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
-            
-            guard let camera else {
-                print("CameraManager: Video device is unavailable")
-                status = .unconfigured
-                session.commitConfiguration()
-                return
-            }
-            
-            let videoInput = try AVCaptureDeviceInput(device: camera)
-            if session.canAddInput(videoInput) {
-                session.addInput(videoInput)
-                videoDeviceInput = videoInput
-                status = .configured
-            } else {
-                print("CameraManager: Could not add video device input")
-                status = .unconfigured
-                session.commitConfiguration()
-                return
-            }
-        } catch {
-            print("CameraManager: Could not create video device")
-            status = .failed
-            session.commitConfiguration()
-            return
-        }
-    }
-    
-    private func setupPhotoOutput() {
-        if session.canAddOutput(photoOutput) {
-            session.addOutput(photoOutput)
-            let supportedMaxPhotoDimensions = self.videoDeviceInput?.device.activeFormat.supportedMaxPhotoDimensions
-            photoOutput.maxPhotoDimensions = (supportedMaxPhotoDimensions?.last)!
-            photoOutput.maxPhotoQualityPrioritization = .quality
-            status = .configured
-        } else {
-            print("CameraManager: could not add photo output to the session")
-            status = .failed
-            session.commitConfiguration()
-            return
-        }
-    }
-    
-    private func setupVideoOutput() {
-        if session.canAddOutput(videoOutput) {
-            session.addOutput(videoOutput)
-            videoOutput.setSampleBufferDelegate(self, queue: queue)
-            videoOutput.alwaysDiscardsLateVideoFrames = true
-            status = .configured
-        } else {
-            print("CameraManager: could not add video output to the session")
-            status = .failed
-            session.commitConfiguration()
-            return
-        }
-    }
-    
-    //MARK: - Functional methods and functions
     func startCapturing() {
         if status == .configured {
             sessionQueue.async {
-                self.session.startRunning()
+                if !self.session.isRunning {
+                    self.session.startRunning()
+                }
             }
         } else if status == .unconfigured || status == .unauthorized {
             DispatchQueue.main.async {
-                self.alertError = AlertError(title: "Camera Error", message: "Camera configuration failed. Either your device camera is not available or its missing permissions", primaryButtonTitle: "ok", secondaryButtonTitle: nil, primaryAction: nil, secondaryAction: nil)
+                self.alertError = AlertError(
+                    title: "Camera Error",
+                    message: "Camera configuration failed. Either your device camera is not available or permissions are missing.",
+                    primaryButtonTitle: "OK"
+                )
                 self.shouldShowAlertView = true
-                print("CameraManager: camera config failed");
             }
         }
     }
-    
+
     func stopCapturing() {
         sessionQueue.async { [weak self] in
-            guard let self else { return }
-            if self.session.isRunning {
-                self.session.stopRunning()
-            }
+            guard let self, self.session.isRunning else { return }
+            self.session.stopRunning()
         }
     }
-    
+
     func toggleTorch(torchIsOn: Bool) {
-        guard let device = AVCaptureDevice.default(for: .video) else { return }
-        if device.hasTorch {
-            do {
-                try device.lockForConfiguration()
-                flashMode = torchIsOn ? .on : .off
-                if torchIsOn {
-                    try device.setTorchModeOn(level: 1.0)
-                } else {
-                    device.torchMode = .off
-                }
-                device.unlockForConfiguration()
-            } catch {
-                print("Failed to set torch mode: \(error).")
+        guard let device = videoDeviceInput?.device, device.hasTorch else { return }
+
+        do {
+            try device.lockForConfiguration()
+            flashMode = torchIsOn ? .on : .off
+            if torchIsOn {
+                try device.setTorchModeOn(level: 1.0)
+            } else {
+                device.torchMode = .off
             }
-        } else {
-            print("Torch not available for this device")
+            device.unlockForConfiguration()
+        } catch {
+            AppLogger.camera.error("Failed to set torch mode: \(error.localizedDescription)")
         }
     }
-    
+
     func setFocusOnTap(devicePoint: CGPoint) {
-        guard let cameraDevice = self.videoDeviceInput?.device else { return }
+        guard let cameraDevice = videoDeviceInput?.device else { return }
+
         sessionQueue.async {
             do {
                 try cameraDevice.lockForConfiguration()
-                
-                if cameraDevice.isFocusModeSupported(.autoFocus) && cameraDevice.isFocusPointOfInterestSupported {
+
+                if cameraDevice.isFocusModeSupported(.autoFocus), cameraDevice.isFocusPointOfInterestSupported {
                     cameraDevice.focusPointOfInterest = devicePoint
                     cameraDevice.focusMode = .autoFocus
                 }
-                
-                if cameraDevice.isExposurePointOfInterestSupported && cameraDevice.isExposureModeSupported(.autoExpose) {
+
+                if cameraDevice.isExposurePointOfInterestSupported, cameraDevice.isExposureModeSupported(.autoExpose) {
                     cameraDevice.exposurePointOfInterest = devicePoint
                     cameraDevice.exposureMode = .autoExpose
-                    
                 }
-                
+
                 cameraDevice.isSubjectAreaChangeMonitoringEnabled = false
                 cameraDevice.unlockForConfiguration()
             } catch {
-                print("Failed to configure focus: \(error)")
+                AppLogger.camera.error("Failed to configure focus: \(error.localizedDescription)")
             }
         }
     }
-    
+
     func switchCamera() {
-        guard let videoDeviceInput else { return }
-        session.removeInput(videoDeviceInput)
-        setupVideoInput()
+        sessionQueue.async {
+            guard let currentInput = self.videoDeviceInput else { return }
+
+            self.session.beginConfiguration()
+            self.session.removeInput(currentInput)
+            self.position = self.position == .back ? .front : .back
+            self.setupVideoInput()
+            self.session.commitConfiguration()
+        }
     }
-    
-    func captureImage(completion: @escaping (UIImage?) -> Void) {
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            
-            guard self.session.isRunning else {
-                print("CameraManager: Session is not running")
-                completion(nil)
+
+    func captureImage() async -> UIImage? {
+        await withCheckedContinuation { continuation in
+            sessionQueue.async { [weak self] in
+                guard let self else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                guard self.session.isRunning, self.session.outputs.contains(self.photoOutput) else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                var photoSettings = AVCapturePhotoSettings()
+                if self.photoOutput.availablePhotoCodecTypes.contains(.hevc) {
+                    photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
+                }
+
+                if self.videoDeviceInput?.device.isFlashAvailable == true {
+                    photoSettings.flashMode = self.flashMode
+                }
+
+                photoSettings.maxPhotoDimensions = self.photoOutput.maxPhotoDimensions
+                photoSettings.photoQualityPrioritization = self.photoOutput.maxPhotoQualityPrioritization
+
+                if let previewPixelFormat = photoSettings.availablePreviewPhotoPixelFormatTypes.first {
+                    photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: previewPixelFormat]
+                }
+
+                self.cameraDelegate = CameraDelegate { image in
+                    self.capturedImage = image
+                    continuation.resume(returning: image)
+                }
+
+                guard let cameraDelegate = self.cameraDelegate else {
+                    continuation.resume(returning: nil)
+                    return
+                }
+
+                self.photoOutput.capturePhoto(with: photoSettings, delegate: cameraDelegate)
+            }
+        }
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        onFrame?(sampleBuffer)
+    }
+
+    private func setupVideoInput() {
+        do {
+            let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position)
+
+            guard let camera else {
+                AppLogger.camera.error("Video device is unavailable")
+                status = .unconfigured
                 return
             }
 
-            guard self.session.outputs.contains(self.photoOutput) else {
-                print("CameraManager: Photo output is not added to the session")
-                completion(nil)
+            let videoInput = try AVCaptureDeviceInput(device: camera)
+            guard session.canAddInput(videoInput) else {
+                AppLogger.camera.error("Could not add video device input")
+                status = .failed
                 return
             }
-        
-            var photoSettings = AVCapturePhotoSettings()
-            
-            if photoOutput.availablePhotoCodecTypes.contains(.hevc) {
-                photoSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.hevc])
-            }
-            
-            if self.videoDeviceInput!.device.isFlashAvailable {
-                photoSettings.flashMode = self.flashMode
-            }
-            
-            photoSettings.maxPhotoDimensions = self.photoOutput.maxPhotoDimensions
-            
-            if let previewPhotoPixelFormatType = photoSettings.availablePreviewPhotoPixelFormatTypes.first {
-                photoSettings.previewPhotoFormat = [kCVPixelBufferPixelFormatTypeKey as String: previewPhotoPixelFormatType]
-            }
-            
-            photoSettings.photoQualityPrioritization = self.photoOutput.maxPhotoQualityPrioritization
-            
-            self.cameraDelegate = CameraDelegate { image in
-                if let imagineCapturata = image {
-                    self.capturedImage = imagineCapturata
-                    print("CameraManager: Image captured successfully")
-                    completion(imagineCapturata)
-                } else {
-                    print("CameraManager: No image captured")
-                    completion(nil)
-                }
-            }
-            
-            if let cameraDelegate = self.cameraDelegate {
-                print("CameraManager: Starting photo capture")
-                self.photoOutput.capturePhoto(with: photoSettings, delegate: cameraDelegate)
-            } else {
-                print("CameraManager: cameraDelegate is nil")
-                completion(nil)
-            }
+
+            session.addInput(videoInput)
+            videoDeviceInput = videoInput
+            status = .configured
+        } catch {
+            AppLogger.camera.error("Could not create video device: \(error.localizedDescription)")
+            status = .failed
         }
     }
+
+    private func setupPhotoOutput() {
+        guard session.canAddOutput(photoOutput) else {
+            AppLogger.camera.error("Could not add photo output to the session")
+            status = .failed
+            return
+        }
+
+        session.addOutput(photoOutput)
+        if let supportedMaxPhotoDimensions = videoDeviceInput?.device.activeFormat.supportedMaxPhotoDimensions.last {
+            photoOutput.maxPhotoDimensions = supportedMaxPhotoDimensions
+        }
+        photoOutput.maxPhotoQualityPrioritization = .quality
+        status = .configured
+    }
+
+    private func setupVideoOutput() {
+        guard session.canAddOutput(videoOutput) else {
+            AppLogger.camera.error("Could not add video output to the session")
+            status = .failed
+            return
+        }
+
+        session.addOutput(videoOutput)
+        videoOutput.alwaysDiscardsLateVideoFrames = true
+        videoOutput.setSampleBufferDelegate(self, queue: videoOutputQueue)
+        status = .configured
+    }
 }
-//MARK: - Extension of UIImage to create an image from a pixel buffer
+
 extension UIImage {
     convenience init?(pixelBuffer: CVPixelBuffer) {
         let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
@@ -253,7 +236,6 @@ extension UIImage {
     }
 }
 
-//MARK: - Declaration of an AlertError type of message
 public struct AlertError {
     public var title: String = ""
     public var message: String = ""
@@ -261,8 +243,15 @@ public struct AlertError {
     public var secondaryButtonTitle: String?
     public var primaryAction: (() -> ())?
     public var secondaryAction: (() -> ())?
-    
-    public init(title: String = "", message: String = "", primaryButtonTitle: String = "Accept", secondaryButtonTitle: String? = nil, primaryAction: (() -> ())? = nil, secondaryAction: (() -> ())? = nil) {
+
+    public init(
+        title: String = "",
+        message: String = "",
+        primaryButtonTitle: String = "Accept",
+        secondaryButtonTitle: String? = nil,
+        primaryAction: (() -> ())? = nil,
+        secondaryAction: (() -> ())? = nil
+    ) {
         self.title = title
         self.message = message
         self.primaryAction = primaryAction

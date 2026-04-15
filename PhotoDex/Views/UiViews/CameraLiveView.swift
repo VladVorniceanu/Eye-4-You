@@ -1,181 +1,282 @@
-import SwiftUI
-import Vision
 import PhotosUI
+import SwiftUI
 
 struct CameraLiveView: View {
-    @State var isLiveDetectionFlow: Bool
-    @ObservedObject private var model = CameraViewModel()
-    @StateObject private var viewModel = PhotoPicker()
-    @StateObject private var imageState = ImageState()
-    @State private var focusLocation: CGPoint = .zero
-    @State private var showingPhotoReview = false
-    @State private var isFocused = false
-    @State private var isScaled = false
-    @State private var isLoadingImage = false
-    @State private var predictions: [CustomMLModel.Prediction] = []
-    @State private var selectedItems: Set<UUID> = []
-    @State private var analysisError: Error?
-    @State private var isPoseDetectionRunning = false
-    @State private var posePoints: [VNHumanBodyPoseObservation.JointName: CGPoint] = [:]
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var viewModel: CameraViewModel
+
+    init(isLiveDetectionFlow: Bool) {
+        _viewModel = StateObject(wrappedValue: CameraViewModel(isLiveDetectionFlow: isLiveDetectionFlow))
+    }
+
+    var body: some View {
+        let selectedImage = viewModel.selectedImage
+
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            FrameView(session: viewModel.session) { previewPoint, devicePoint in
+                viewModel.setFocus(previewPoint: previewPoint, devicePoint: devicePoint)
+            }
+            .overlay {
+                ZStack {
+                    if viewModel.isLiveDetectionRunning {
+                        OverlayView(predictions: viewModel.predictions, selectedItems: viewModel.selectedItems)
+                    }
+
+                    if viewModel.isPoseDetectionRunning {
+                        PoseOverlayView(points: viewModel.posePoints)
+                    }
+
+                    if viewModel.focusIndicator.isVisible {
+                        FocusView(position: .constant(viewModel.focusIndicator.point))
+                            .transition(.scale)
+                    }
+                }
+            }
+
+            VStack(spacing: 0) {
+                CameraTopBar(
+                    title: viewModel.isLiveDetectionFlow ? "Analiza live" : "Captureaza o imagine",
+                    subtitle: cameraSubtitle,
+                    isFlashOn: viewModel.isFlashOn,
+                    flashAction: viewModel.switchFlash,
+                    backAction: { dismiss() }
+                )
+
+                Spacer()
+
+                CameraBottomPanel(
+                    selectedImage: selectedImage,
+                    pickerItem: $viewModel.pickerItem,
+                    isLiveDetectionFlow: viewModel.isLiveDetectionFlow,
+                    isLiveDetectionRunning: viewModel.isLiveDetectionRunning,
+                    isPoseDetectionRunning: viewModel.isPoseDetectionRunning,
+                    objectCount: viewModel.predictions.count,
+                    captureAction: viewModel.captureImage,
+                    toggleLiveAction: viewModel.toggleLiveDetection,
+                    togglePoseAction: viewModel.togglePoseDetection,
+                    switchCameraAction: viewModel.switchCamera
+                )
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 20)
+        }
+        .alert(isPresented: $viewModel.showAlertError) {
+            Alert(
+                title: Text(viewModel.alertError.title),
+                message: Text(viewModel.alertError.message),
+                dismissButton: .default(Text(viewModel.alertError.primaryButtonTitle)) {
+                    viewModel.alertError.primaryAction?()
+                }
+            )
+        }
+        .alert(isPresented: $viewModel.showSettingAlert) {
+            Alert(
+                title: Text("Atentie"),
+                message: Text("Aplicatia nu are acces la camera sau la galerie. Activeaza permisiunile din Settings pentru a continua."),
+                dismissButton: .default(Text("Deschide Settings")) {
+                    openSettings()
+                }
+            )
+        }
+        .onAppear {
+            viewModel.onAppear()
+        }
+        .overlay {
+            if viewModel.isLoadingImage {
+                LoadingOverlay(text: "Se incarca imaginea...")
+            }
+        }
+        .sheet(
+            isPresented: Binding(
+                get: { viewModel.showingPhotoReview },
+                set: { if !$0 { viewModel.dismissPhotoReview() } }
+            )
+        ) {
+            if let image = viewModel.selectedImage {
+                NavigationStack {
+                    PhotoReview(
+                        image: image,
+                        isPresented: Binding(
+                            get: { viewModel.showingPhotoReview },
+                            set: { if !$0 { viewModel.dismissPhotoReview() } }
+                        )
+                    )
+                }
+            }
+        }
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+    }
+
+    private var cameraSubtitle: String {
+        if viewModel.isLiveDetectionFlow {
+            return viewModel.isLiveDetectionRunning
+                ? "\(viewModel.predictions.count) predictii vizibile"
+                : "Detectarea obiectelor este oprita."
+        }
+
+        return "Atinge ecranul pentru focus sau foloseste galeria."
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else {
+            return
+        }
+
+        UIApplication.shared.open(url, options: [:])
+    }
+}
+
+private struct CameraTopBar: View {
+    let title: String
+    let subtitle: String
+    let isFlashOn: Bool
+    let flashAction: () -> Void
+    let backAction: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Button(action: backAction) {
+                Image(systemName: "chevron.left")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.12), in: Circle())
+            }
+            .buttonStyle(.plain)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+
+            Spacer()
+
+            FlashButton(isOn: isFlashOn, action: flashAction)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(.ultraThinMaterial, in: Capsule())
+    }
+}
+
+private struct CameraBottomPanel: View {
+    let selectedImage: UIImage?
+    @Binding var pickerItem: PhotosPickerItem?
+    let isLiveDetectionFlow: Bool
+    let isLiveDetectionRunning: Bool
+    let isPoseDetectionRunning: Bool
+    let objectCount: Int
+    let captureAction: () -> Void
+    let toggleLiveAction: () -> Void
+    let togglePoseAction: () -> Void
+    let switchCameraAction: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if isLiveDetectionFlow {
+                Label(
+                    objectCount == 0 ? "Nicio predictie detectata momentan" : "\(objectCount) predictii detectate",
+                    systemImage: "viewfinder"
+                )
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.white.opacity(0.8))
+            }
+
+            HStack(alignment: .bottom, spacing: 12) {
+                PhotosPicker(
+                    selection: $pickerItem,
+                    matching: .any(of: [.images, .not(.screenshots)]),
+                    preferredItemEncoding: .current,
+                    photoLibrary: .shared()
+                ) {
+                    GalleryThumbnail(image: .constant(selectedImage))
+                }
+
+                Spacer(minLength: 0)
+
+                if isLiveDetectionFlow {
+                    LiveModeControl(
+                        title: "Obiecte",
+                        systemImage: "sparkle.magnifyingglass",
+                        isActive: isLiveDetectionRunning,
+                        action: toggleLiveAction
+                    )
+
+                    LiveModeControl(
+                        title: "Postura",
+                        systemImage: "figure.walk",
+                        isActive: isPoseDetectionRunning,
+                        action: togglePoseAction
+                    )
+                } else {
+                    ShutterButton(action: captureAction)
+                }
+
+                Spacer(minLength: 0)
+
+                CameraSwitchButton(action: switchCameraAction)
+            }
+        }
+        .padding(16)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+}
+
+private struct LiveModeControl: View, Equatable {
+    let title: String
+    let systemImage: String
+    let isActive: Bool
+    let action: () -> Void
+
+    static func == (lhs: LiveModeControl, rhs: LiveModeControl) -> Bool {
+        lhs.title == rhs.title && lhs.systemImage == rhs.systemImage && lhs.isActive == rhs.isActive
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.title3.weight(.semibold))
+                Text(title)
+                    .font(.caption.weight(.semibold))
+            }
+            .foregroundStyle(isActive ? Color.white : Color.white.opacity(0.85))
+            .frame(width: 88, height: 72)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(isActive ? Color.accentColor : Color.white.opacity(0.12))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct LoadingOverlay: View, Equatable {
+    let text: String
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                FlashButton(model: model)
-                
-                ZStack {
-                    FrameView(isLiveDetectionFlow: $model.isLiveDetectionRunning, session: model.session, predictions: $predictions, analysisError: $analysisError, isPoseDetectionRunning: $isPoseDetectionRunning, posePoints: $posePoints) { tapPoint in
-                        isFocused = true
-                        focusLocation = tapPoint
-                        model.setFocus(point: tapPoint)
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    }
-                    
-                    if isFocused {
-                        FocusView(position: $focusLocation)
-                        .scaleEffect(isScaled ? 0.8 : 1)
-                        .onAppear {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.6, blendDuration: 0)) {
-                                self.isScaled = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                    self.isFocused = false
-                                    self.isScaled = false
-                                }
-                            }
-                        }
-                    }
-                    if model.isLiveDetectionRunning {
-                        OverlayView(predictions: $predictions, selectedItems: $selectedItems)
-                    }
-
-                    if isPoseDetectionRunning {
-                        PoseOverlayView(points: $posePoints)
-                    }
-                }
-                
-                HStack {
-                    PhotosPicker(selection: $viewModel.imageSelection,
-                                 matching: .any(of: [.images, .not(.screenshots)]),
-                                 preferredItemEncoding: .current,
-                                 photoLibrary: .shared()) {
-                        GalleryThumbnail(image: $imageState.uiImage)
-                    }
-                    .onChange(of: viewModel.imageSelection) { _ in
-                        Task {
-                            await loadImage()
-                        }
-                    }
-                    
-                    Spacer()
-                        
-                    if !isLiveDetectionFlow {
-                        ShutterButton(action: {
-                            isLoadingImage = true
-                            DispatchQueue.global(qos: .background).async {
-                                model.captureImage { uiImage in
-                                    if let image = uiImage {
-                                        DispatchQueue.main.async {
-                                            imageState.setUIImage(image)
-                                            isLoadingImage = false
-                                            showingPhotoReview = true
-                                            print("CameraLiveView: Image captured and UI updated")
-                                        }
-                                    } else {
-                                        DispatchQueue.main.async {
-                                            isLoadingImage = false
-                                            print("CameraLiveView: Failed to capture image")
-                                        }
-                                    }
-                                }
-                            }
-                        })
-                    } else {
-                        LiveDetectSwitch(action: {
-                            model.toggleLiveDetection()
-                            print("Live detection toggled: \(model.isLiveDetectionRunning)")
-                        })
-
-                        PoseDetectSwitch(action: {
-                            isPoseDetectionRunning.toggle()
-                            print("Pose detection toggled: \(isPoseDetectionRunning)")
-                        })
-                    }
-                    
-                    Spacer()
-                    
-                    CameraSwitchButton(action: {
-                        model.switchCamera()
-                    })
-                    
-                }.padding(.horizontal)
+            Color.black.opacity(0.7).ignoresSafeArea()
+            VStack(spacing: 12) {
+                ProgressView()
+                    .tint(.white)
+                    .scaleEffect(1.2)
+                Text(text)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.white)
             }
-            .alert(isPresented: $model.showAlertError) {
-                Alert(
-                    title: Text(model.alertError.title),
-                    message: Text(model.alertError.message),
-                    dismissButton: .default(Text(model.alertError.primaryButtonTitle)) {
-                        model.alertError.primaryAction?()
-                    }
-                )
-            }
-            .alert(isPresented: $model.showSettingAlert) {
-                Alert(
-                    title: Text("Atenție"),
-                    message: Text("Aplicația nu are acces la cameră. Pentru a putea folosi funcționalitățile aplicației, acordați permisiunile necesare aplicației, din setările dispozitivului."),
-                    dismissButton: .default(Text("Du-te la setări")) {
-                        self.openSettings()
-                    }
-                )
-            }
-            .onAppear {
-                DispatchQueue.global(qos: .background).async {
-                    model.setupBindings()
-                    model.checkAndRequestPermissions()
-                }
-            }
-            .overlay {
-                if isLoadingImage {
-                    Color.black.opacity(0.8).ignoresSafeArea()
-                    ProgressView("Se încarcă imaginea...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(1.2)
-                        .animation(.easeInOut(duration: 2), value: isLoadingImage)
-                }
-            }
-            .sheet(isPresented: $showingPhotoReview) {
-                if let uiImage = imageState.uiImage {
-                    NavigationView {
-                        PhotoReview(image: uiImage, isPresented: self.$showingPhotoReview)
-                    }
-                }
-            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
-        .navigationTitle(isLiveDetectionFlow ? "Analiză cadre LIVE" : "Capturează o imagine")
-    }
-    
-    func openSettings() {
-        let settingsUrl = URL(string: UIApplication.openSettingsURLString)
-        if let url = settingsUrl {
-            UIApplication.shared.open(url, options: [:])
-        }
-    }
-    
-    func loadImage() async {
-        isLoadingImage = true
-        if let imageSelection = viewModel.imageSelection {
-            do {
-                if let data = try await imageSelection.loadTransferable(type: Data.self) {
-                    if let image = UIImage(data: data) {
-                        imageState.setUIImage(image)
-                        showingPhotoReview = true
-                    }
-                }
-            } catch {
-                print("Error loading image: \(error.localizedDescription)")
-            }
-        }
-        isLoadingImage = false
     }
 }

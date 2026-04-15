@@ -2,80 +2,116 @@ import SwiftUI
 
 struct SideMenuPredictions: View {
     @Binding var isPresented: Bool
-    @Binding var predictions: [CustomMLModel.Prediction]
-    @Binding var selectedItems: Set<UUID>
-    @State private var offset: CGFloat = 0
-    
+    let predictions: [Prediction]
+    let selectedItems: Set<UUID>
+    let onSelectionChanged: (UUID, Bool) -> Void
+
     var body: some View {
         GeometryReader { geometry in
             HStack {
-                Spacer()
-                VStack(alignment: .trailing) {
-                    Text("Predicții")
-                        .font(.title)
-                        .fontWeight(.bold)
-                        .padding(.top, 20)
-                        .padding(.horizontal, 20)
-                    
-                    List {
-                        ForEach(predictions, id: \.id) { item in
-                            HStack {
-                                Toggle(isOn: Binding(
-                                    get: { selectedItems.contains(item.id) },
-                                    set: { isSelected in
-                                        if isSelected {
-                                            selectedItems.insert(item.id)
-                                        } else {
-                                            selectedItems.remove(item.id)
-                                        }
-                                    }
-                                )) {
-                                    VStack(alignment: .leading) {
-                                        Text(item.label.capitalized)
-                                        Text("\(String(format: "%.2f", item.confidence * 100))%")
-                                            .font(.subheadline)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
+                Spacer(minLength: 0)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+
+                    if predictions.isEmpty {
+                        emptyState
+                    } else {
+                        List {
+                            ForEach(predictions, id: \.id) { item in
+                                PredictionRow(
+                                    item: item,
+                                    isSelected: selectedItems.contains(item.id),
+                                    onSelectionChanged: { onSelectionChanged(item.id, $0) }
+                                )
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowSeparator(.hidden)
+                                .listRowBackground(Color.clear)
                             }
                         }
+                        .listStyle(.plain)
+                        .scrollContentBackground(.hidden)
                     }
-                    .listStyle(PlainListStyle())
                 }
-                .frame(width: geometry.size.width * 0.75)
-                .background(Color(UIColor.systemBackground))
-                .offset(x: offset)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            if value.translation.width > 0 {
-                                self.offset = value.translation.width
-                            }
-                        }
-                        .onEnded { value in
-                            if value.translation.width > 50 {
-                                withAnimation {
-                                    isPresented = false
-                                    offset = geometry.size.width
-                                }
-                            } else {
-                                withAnimation {
-                                    self.offset = 0
-                                }
-                            }
-                        }
-                )
+                .frame(width: min(360, geometry.size.width * 0.82))
+                .frame(maxHeight: .infinity)
+                .background(.regularMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .shadow(color: Color.black.opacity(0.18), radius: 22, x: -8, y: 12)
+                .padding(.vertical, 12)
+                .padding(.trailing, 8)
+                .offset(x: isPresented ? 0 : geometry.size.width)
             }
-            .onAppear {
-                withAnimation {
-                    self.offset = 0
-                }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .allowsHitTesting(isPresented)
+        .accessibilityHidden(!isPresented)
+    }
+
+    private var header: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Predictii")
+                    .font(.title3.weight(.semibold))
+                Text("\(predictions.count) rezultate")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .onDisappear {
-                withAnimation {
-                    self.offset = geometry.size.width
+
+            Spacer()
+
+            Button {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    isPresented = false
                 }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 36, height: 36)
+                    .background(Color.secondary.opacity(0.12), in: Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(20)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 10) {
+            Spacer()
+            Image(systemName: "list.bullet.rectangle.portrait")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Text("Nu exista predictii de afisat")
+                .font(.headline)
+            Text("Dupa analiza, lista rezultatelor va aparea aici.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct PredictionRow: View {
+    let item: Prediction
+    let isSelected: Bool
+    let onSelectionChanged: (Bool) -> Void
+
+    var body: some View {
+        Toggle(isOn: Binding(get: { isSelected }, set: onSelectionChanged)) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(item.label.capitalized)
+                    .font(.body.weight(.medium))
+                Text("\(String(format: "%.1f", item.confidence * 100))% incredere")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
+        .toggleStyle(SwitchToggleStyle(tint: .accentColor))
+        .padding(14)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
