@@ -66,7 +66,7 @@ private struct PredictionOverlayItem: View, Equatable {
                 .position(x: x + width / 2, y: y + height / 2)
                 .shadow(color: isPrimary ? primaryStrokeColor.opacity(0.45) : .clear, radius: 12)
 
-            Text("\(prediction.label) \(String(format: "%.2f", prediction.confidence * 100))%")
+            Text(prediction.label.capitalized)
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.white)
                 .padding(.horizontal, 10)
