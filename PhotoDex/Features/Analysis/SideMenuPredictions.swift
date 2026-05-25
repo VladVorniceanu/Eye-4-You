@@ -102,13 +102,8 @@ private struct PredictionRow: View {
 
     var body: some View {
         Toggle(isOn: Binding(get: { isSelected }, set: onSelectionChanged)) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(item.label.capitalized)
-                    .font(.body.weight(.medium))
-                Text("\(String(format: "%.1f", item.confidence * 100))% incredere")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text(item.label.capitalized)
+                .font(.body.weight(.medium))
         }
         .toggleStyle(SwitchToggleStyle(tint: .accentColor))
         .padding(14)

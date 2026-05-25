@@ -38,9 +38,11 @@ final class CameraViewModel: ObservableObject {
     private let cameraManager: CameraManager
     private let permissionsManager: PermissionsManager
     private let mlFacade: CustomMLModel
+    private let dangerAnnouncer = DangerAnnouncer.shared
 
     private var hasAppeared = false
     private var isAnalyzingFrame = false
+    private var isDescribingScene = false
 
     init(
         isLiveDetectionFlow: Bool,
@@ -119,6 +121,7 @@ final class CameraViewModel: ObservableObject {
         } else {
             predictions = []
             selectedItems = []
+            dangerAnnouncer.reset()
         }
     }
 
@@ -160,6 +163,15 @@ final class CameraViewModel: ObservableObject {
         showingPhotoReview = false
     }
 
+    func describeScene() {
+        guard !isDescribingScene else { return }
+        let snapshot = predictions
+        isDescribingScene = true
+        dangerAnnouncer.describeScene(predictions: snapshot) { [weak self] in
+            self?.isDescribingScene = false
+        }
+    }
+
     func toggleSelection(for predictionID: UUID, isSelected: Bool) {
         if isSelected {
             selectedItems.insert(predictionID)
@@ -190,7 +202,7 @@ final class CameraViewModel: ObservableObject {
     }
 
     private func handleIncomingFrame(_ sampleBuffer: CMSampleBuffer) async {
-        guard (isLiveDetectionRunning || isPoseDetectionRunning), !isAnalyzingFrame else {
+        guard (isLiveDetectionRunning || isPoseDetectionRunning), !isAnalyzingFrame, !isDescribingScene else {
             return
         }
 
@@ -209,6 +221,10 @@ final class CameraViewModel: ObservableObject {
             predictions = result.predictions
             posePoints = result.posePoints
             selectedItems = Set(result.predictions.map(\.id))
+
+            if isLiveDetectionRunning {
+                dangerAnnouncer.process(predictions: result.predictions)
+            }
         } catch {
             analysisError = error.localizedDescription
         }

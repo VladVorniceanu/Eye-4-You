@@ -16,6 +16,7 @@
 		3405BF182BCACF7000CE302F /* MLAnalysisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3405BF172BCACF7000CE302F /* MLAnalysisView.swift */; };
 		3405BF1A2BCAD84300CE302F /* CustomMLModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3405BF192BCAD84300CE302F /* CustomMLModel.swift */; };
 		3425AEB12EA6970C0039ECD1 /* Logging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3425AEB02EA6970C0039ECD1 /* Logging.swift */; };
+		34296A2E2FC46738000845A0 /* MVP_PLAN.md in Resources */ = {isa = PBXBuildFile; fileRef = 34296A2D2FC46738000845A0 /* MVP_PLAN.md */; };
 		342B2F492F6C79A6007CA388 /* AnalysisModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B2F482F6C79A6007CA388 /* AnalysisModels.swift */; };
 		342B2F4B2F6C79A7007CA388 /* MainMenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B2F4A2F6C79A7007CA388 /* MainMenuViewModel.swift */; };
 		342B2F4D2F6C79A7007CA388 /* MLAnalysisViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B2F4C2F6C79A7007CA388 /* MLAnalysisViewModel.swift */; };
@@ -25,6 +26,7 @@
 		3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B12BBEC4D5006626CA /* PhotoReview.swift */; };
 		3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B72BBFE590006626CA /* CameraViewModel.swift */; };
 		34650CC02BD8F44100A1CB90 /* yolov5s.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */; };
+		347930192FBB3C2C00539E3E /* DangerAnnouncer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347930182FBB3C2C00539E3E /* DangerAnnouncer.swift */; };
 		348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */; };
 		348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */; };
 		348197A42B9F6BA7008E5F76 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 348197A32B9F6BA7008E5F76 /* Assets.xcassets */; };
@@ -54,6 +56,7 @@
 		3405BF172BCACF7000CE302F /* MLAnalysisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLAnalysisView.swift; sourceTree = "<group>"; };
 		3405BF192BCAD84300CE302F /* CustomMLModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomMLModel.swift; sourceTree = "<group>"; };
 		3425AEB02EA6970C0039ECD1 /* Logging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logging.swift; sourceTree = "<group>"; };
+		34296A2D2FC46738000845A0 /* MVP_PLAN.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = MVP_PLAN.md; sourceTree = "<group>"; };
 		342B2F482F6C79A6007CA388 /* AnalysisModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisModels.swift; sourceTree = "<group>"; };
 		342B2F4A2F6C79A7007CA388 /* MainMenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuViewModel.swift; sourceTree = "<group>"; };
 		342B2F4C2F6C79A7007CA388 /* MLAnalysisViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLAnalysisViewModel.swift; sourceTree = "<group>"; };
@@ -63,6 +66,7 @@
 		3462D4B12BBEC4D5006626CA /* PhotoReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoReview.swift; sourceTree = "<group>"; };
 		3462D4B72BBFE590006626CA /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
 		34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = yolov5s.mlmodel; sourceTree = "<group>"; };
+		347930182FBB3C2C00539E3E /* DangerAnnouncer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DangerAnnouncer.swift; sourceTree = "<group>"; };
 		3481979C2B9F6BA6008E5F76 /* PhotoDex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDex.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDexApp.swift; sourceTree = "<group>"; };
 		348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLiveView.swift; sourceTree = "<group>"; };
@@ -114,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */,
+				34296A2D2FC46738000845A0 /* MVP_PLAN.md */,
 				34E664192F8F421B00D66C3F /* Core */,
 				34E6641A2F8F421B00D66C3F /* Features */,
 				34E6641B2F8F421C00D66C3F /* Resources */,
@@ -172,6 +177,7 @@
 		34E6641D2F8F422300D66C3F /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				347930182FBB3C2C00539E3E /* DangerAnnouncer.swift */,
 				3425AEB02EA6970C0039ECD1 /* Logging.swift */,
 				34A71F1F2C272B8000FA4717 /* UIImage+Extension.swift */,
 				34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */,
@@ -291,6 +297,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				348197A72B9F6BA7008E5F76 /* Preview Assets.xcassets in Resources */,
+				34296A2E2FC46738000845A0 /* MVP_PLAN.md in Resources */,
 				348197A42B9F6BA7008E5F76 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -308,6 +315,7 @@
 				3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */,
 				34A71F322C2899F000FA4717 /* PoseOverlayView.swift in Sources */,
 				3405BF012BC81EB100CE302F /* ShutterButton.swift in Sources */,
+				347930192FBB3C2C00539E3E /* DangerAnnouncer.swift in Sources */,
 				3405BF052BC820DC00CE302F /* CameraSwitchButton.swift in Sources */,
 				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
 				342B2F4D2F6C79A7007CA388 /* MLAnalysisViewModel.swift in Sources */,
@@ -471,7 +479,7 @@
 				DEVELOPMENT_TEAM = KK4TXUS6YX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_CFBundleDisplayName = "Eye 4 You";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vreau sa folosesc camera. Ma lasi?";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa ma uit la poze";
@@ -479,7 +487,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -489,6 +497,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -507,7 +516,7 @@
 				DEVELOPMENT_TEAM = KK4TXUS6YX;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_CFBundleDisplayName = "Eye 4 You";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Vreau sa folosesc camera. Ma lasi?";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Lasa-ma sa ma uit la poze";
@@ -515,7 +524,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -525,6 +534,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

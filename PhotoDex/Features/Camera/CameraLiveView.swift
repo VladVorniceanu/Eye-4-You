@@ -65,7 +65,8 @@ struct CameraLiveView: View {
                     captureAction: viewModel.captureImage,
                     toggleLiveAction: viewModel.toggleLiveDetection,
                     togglePoseAction: viewModel.togglePoseDetection,
-                    switchCameraAction: viewModel.switchCamera
+                    switchCameraAction: viewModel.switchCamera,
+                    describeAction: viewModel.describeScene
                 )
             }
             .padding(.horizontal, 16)
@@ -211,6 +212,7 @@ private struct CameraBottomPanel: View {
     let toggleLiveAction: () -> Void
     let togglePoseAction: () -> Void
     let switchCameraAction: () -> Void
+    let describeAction: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -221,6 +223,20 @@ private struct CameraBottomPanel: View {
                 )
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(.white.opacity(0.8))
+            }
+
+            if isLiveDetectionRunning {
+                Button(action: describeAction) {
+                    Label("Describe Surroundings", systemImage: "ear.fill")
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.indigo, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Describe surroundings")
+                .accessibilityHint("Hear a spoken description of the objects currently visible in the camera")
             }
 
             HStack(alignment: .bottom, spacing: 12) {

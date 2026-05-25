@@ -70,13 +70,18 @@ struct MainMenuView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("PhotoDex")
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Eye 4 You")
                 .font(.system(size: 36, weight: .bold, design: .rounded))
+
+            Text("Your eyes, reimagined.")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
 
             Text("Analizeaza rapid obiecte din camera sau din galerie, intr-un flux mai usor de inteles si de controlat.")
                 .font(.body)
                 .foregroundStyle(.secondary)
+                .padding(.top, 4)
         }
     }
 
