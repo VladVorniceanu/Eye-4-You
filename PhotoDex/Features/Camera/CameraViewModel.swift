@@ -6,7 +6,6 @@
 //
 
 import AVFoundation
-import MediaPlayer
 import PhotosUI
 import SwiftUI
 import Vision
@@ -78,7 +77,6 @@ final class CameraViewModel: ObservableObject {
     }
 
     func onAppear() {
-        registerRemoteCommands()
         guard !hasAppeared else { return }
         hasAppeared = true
 
@@ -101,10 +99,6 @@ final class CameraViewModel: ObservableObject {
                 showSettingAlert = true
             }
         }
-    }
-
-    func onDisappear() {
-        unregisterRemoteCommands()
     }
 
     func switchFlash() {
@@ -212,45 +206,6 @@ final class CameraViewModel: ObservableObject {
         } catch {
             analysisError = error.localizedDescription
         }
-    }
-
-    // Registers the headphone / AirPods single-press (togglePlayPause) as a
-    // hands-free trigger for describeScene so visually-impaired users can hear
-    // a scene description without locating a button on screen.
-    // Called every onAppear (removeTarget first to prevent duplicate handlers).
-    // Activating the AVAudioSession and setting MPNowPlayingInfo here is required:
-    // without them iOS routes the AirPods button to whichever media app (e.g. Music)
-    // last held the Now Playing session, ignoring our command registration entirely.
-    private func registerRemoteCommands() {
-        try? AVAudioSession.sharedInstance().setCategory(
-            .playback, mode: .spokenAudio,
-            options: [.duckOthers, .allowBluetoothHFP]
-        )
-        try? AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = [
-            MPNowPlayingInfoPropertyIsLiveStream: true,
-            MPNowPlayingInfoPropertyPlaybackRate: 1.0,
-            MPMediaItemPropertyTitle: "Eye 4 You",
-        ]
-
-        UIApplication.shared.beginReceivingRemoteControlEvents()
-        let cmd = MPRemoteCommandCenter.shared().togglePlayPauseCommand
-        cmd.isEnabled = true
-        cmd.removeTarget(nil)
-        cmd.addTarget { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.describeScene()
-            }
-            return .success
-        }
-    }
-
-    private func unregisterRemoteCommands() {
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-        let cmd = MPRemoteCommandCenter.shared().togglePlayPauseCommand
-        cmd.removeTarget(nil)
-        cmd.isEnabled = false
     }
 
     private func handleIncomingFrame(_ sampleBuffer: CMSampleBuffer) async {

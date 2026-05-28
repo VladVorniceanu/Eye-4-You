@@ -101,9 +101,6 @@ struct CameraLiveView: View {
         .onAppear {
             viewModel.onAppear()
         }
-        .onDisappear {
-            viewModel.onDisappear()
-        }
         .overlay {
             if viewModel.isLoadingImage {
                 LoadingOverlay(text: viewModel.loadingMessage)
