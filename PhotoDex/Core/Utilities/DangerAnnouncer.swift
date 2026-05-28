@@ -7,6 +7,7 @@
 
 import AVFoundation
 import Foundation
+import UIKit
 
 // Announces path hazards detected by the live YOLO model using text-to-speech.
 // Each frame, candidate detections are classified against a walking corridor
@@ -314,6 +315,7 @@ final class DangerAnnouncer: NSObject {
     private func announce(hazard: ScoredHazard, at time: Date) {
         lastAnnouncedAt[hazard.prediction.label] = time
         lastGlobalAnnouncementAt = time
+        HapticEngine.shared.warn(proximity: hazard.proximity, inPath: hazard.relation == .inPath)
         utter(composePhrase(for: hazard))
     }
 
