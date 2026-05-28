@@ -34,6 +34,8 @@
 		348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AD2B9F818A008E5F76 /* FrameView.swift */; };
 		348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AF2B9F8259008E5F76 /* CameraManager.swift */; };
 		349C9C9C2FC84A1F00CE3EC3 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */; };
+		349C9C9E2FC8688C00CE3EC3 /* ShakeDetecting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9C9D2FC8688C00CE3EC3 /* ShakeDetecting.swift */; };
+		349C9CA12FC86A1000CE3EC3 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CA02FC86A1000CE3EC3 /* OnboardingView.swift */; };
 		34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F172C25828600FA4717 /* SideMenuPredictions.swift */; };
 		34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F192C25A8D700FA4717 /* YoloCoreML.swift */; };
 		34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */; };
@@ -77,6 +79,8 @@
 		348197AD2B9F818A008E5F76 /* FrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameView.swift; sourceTree = "<group>"; };
 		348197AF2B9F8259008E5F76 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
+		349C9C9D2FC8688C00CE3EC3 /* ShakeDetecting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetecting.swift; sourceTree = "<group>"; };
+		349C9CA02FC86A1000CE3EC3 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		34A71F172C25828600FA4717 /* SideMenuPredictions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuPredictions.swift; sourceTree = "<group>"; };
 		34A71F192C25A8D700FA4717 /* YoloCoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YoloCoreML.swift; sourceTree = "<group>"; };
 		34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileNetV2CoreML.swift; sourceTree = "<group>"; };
@@ -137,6 +141,14 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		349C9C9F2FC86A0F00CE3EC3 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				349C9CA02FC86A1000CE3EC3 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
 		34E664192F8F421B00D66C3F /* Core */ = {
 			isa = PBXGroup;
 			children = (
@@ -153,6 +165,7 @@
 				34E6641F2F8F422300D66C3F /* MainMenu */,
 				34E664202F8F422400D66C3F /* Camera */,
 				34E664212F8F422400D66C3F /* Analysis */,
+				349C9C9F2FC86A0F00CE3EC3 /* Onboarding */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -186,6 +199,7 @@
 				34A71F1F2C272B8000FA4717 /* UIImage+Extension.swift */,
 				34A71F1D2C2728A300FA4717 /* PermissionsManager.swift */,
 				349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */,
+				349C9C9D2FC8688C00CE3EC3 /* ShakeDetecting.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -340,10 +354,12 @@
 				3405BF072BC8215700CE302F /* FocusView.swift in Sources */,
 				34A71F2E2C28994000FA4717 /* PoseDetectionManager.swift in Sources */,
 				348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */,
+				349C9CA12FC86A1000CE3EC3 /* OnboardingView.swift in Sources */,
 				34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */,
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
 				34A71F262C2737A800FA4717 /* LiveDetectSwitch.swift in Sources */,
 				34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */,
+				349C9C9E2FC8688C00CE3EC3 /* ShakeDetecting.swift in Sources */,
 				3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */,
 				3425AEB12EA6970C0039ECD1 /* Logging.swift in Sources */,
 				34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */,

@@ -124,6 +124,11 @@ struct CameraLiveView: View {
                 }
             }
         }
+        .onShake {
+            if viewModel.isLiveDetectionRunning {
+                viewModel.describeScene()
+            }
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
     }
