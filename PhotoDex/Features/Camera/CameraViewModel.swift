@@ -179,6 +179,14 @@ final class CameraViewModel: ObservableObject {
         }
     }
 
+    func replayRecentScene() {
+        guard !isDescribingScene else { return }
+        isDescribingScene = true
+        dangerAnnouncer.replayRecentScene { [weak self] in
+            self?.isDescribingScene = false
+        }
+    }
+
     func toggleSelection(for predictionID: UUID, isSelected: Bool) {
         if isSelected {
             selectedItems.insert(predictionID)

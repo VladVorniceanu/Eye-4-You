@@ -44,6 +44,17 @@ final class DangerAnnouncer: NSObject {
     // speech queue entirely — they remain available for describeScene.
     private let minPriorityToAnnounce: Double = 0.05
 
+    // Rolling 30-second detection cache — throttled to one write per second so
+    // the array stays small (~30 entries). Used by replayRecentScene().
+    private struct DetectionSnapshot {
+        let timestamp: Date
+        let predictions: [Prediction]
+    }
+    private var recentSnapshots: [DetectionSnapshot] = []
+    private var lastCacheWriteAt: Date?
+    private let cacheWindow: TimeInterval = 30.0
+    private let cacheWriteInterval: TimeInterval = 1.0
+
     private var isRomanian: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ro") == true
     }
@@ -147,6 +158,14 @@ final class DangerAnnouncer: NSObject {
         // Continuous haptic runs every frame, independent of TTS cooldowns,
         // so the user feels the obstacle as long as it stays in the corridor.
         HapticEngine.shared.updateContinuousFeedback(for: scored.first)
+
+        // Cache write — at most once per second to keep the buffer small.
+        let snapshotNow = Date()
+        if lastCacheWriteAt.map({ snapshotNow.timeIntervalSince($0) >= cacheWriteInterval }) ?? true {
+            recentSnapshots.append(DetectionSnapshot(timestamp: snapshotNow, predictions: predictions))
+            lastCacheWriteAt = snapshotNow
+            pruneCache()
+        }
 
         guard !isDescribing else { return }
 
@@ -280,6 +299,29 @@ final class DangerAnnouncer: NSObject {
         utter(text)
     }
 
+    // Returns the highest-confidence deduplicated predictions from the last 30 s,
+    // then narrates them through the existing describeScene path.
+    func replayRecentScene(onComplete: @escaping () -> Void) {
+        pruneCache()
+        guard !recentSnapshots.isEmpty else {
+            isDescribing = true
+            onDescriptionComplete = onComplete
+            utter(isRomanian
+                ? "Nu am detectat nimic în ultimele 30 de secunde."
+                : "Nothing detected in the last 30 seconds.")
+            return
+        }
+
+        var bestByLabel: [String: Prediction] = [:]
+        for p in recentSnapshots.flatMap(\.predictions) {
+            if bestByLabel[p.label].map({ p.confidence > $0.confidence }) ?? true {
+                bestByLabel[p.label] = p
+            }
+        }
+        let deduplicated = Array(bestByLabel.values).sorted { $0.confidence > $1.confidence }
+        describeScene(predictions: deduplicated, onComplete: onComplete)
+    }
+
     func reset() {
         synthesizer.stopSpeaking(at: .immediate)
         HapticEngine.shared.stopPulsing()
@@ -288,6 +330,13 @@ final class DangerAnnouncer: NSObject {
         labelTimestamps = [:]
         lastAnnouncedAt = [:]
         lastGlobalAnnouncementAt = nil
+        recentSnapshots = []
+        lastCacheWriteAt = nil
+    }
+
+    private func pruneCache() {
+        let cutoff = Date().addingTimeInterval(-cacheWindow)
+        recentSnapshots = recentSnapshots.filter { $0.timestamp > cutoff }
     }
 
     private func positionLabel(for box: CGRect) -> String {
