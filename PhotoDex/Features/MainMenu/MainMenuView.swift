@@ -71,8 +71,19 @@ struct MainMenuView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Eye 4 You")
-                .font(.system(size: 36, weight: .bold, design: .rounded))
+            HStack(alignment: .top) {
+                Text("Eye 4 You")
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
+                Spacer()
+                NavigationLink(destination: SettingsView()) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 44, height: 44)
+                        .background(.thinMaterial, in: Circle())
+                }
+                .accessibilityLabel(Locale.preferredLanguages.first?.hasPrefix("ro") == true ? "Setări" : "Settings")
+            }
 
             Text("Your eyes, reimagined.")
                 .font(.subheadline.weight(.semibold))

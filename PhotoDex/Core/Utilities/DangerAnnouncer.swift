@@ -193,6 +193,11 @@ final class DangerAnnouncer: NSObject {
                 // Adjacent/peripheral detections stay gated by the curated list
                 // to keep the audio channel from getting noisy.
                 if relation != .inPath, !isCuratedHazard(p.label) { return nil }
+                // Peripheral detections suppressed when the setting is off.
+                if relation == .peripheral,
+                   !((UserDefaults.standard.object(forKey: AppSettingsKeys.peripheralAnnouncements) as? Bool) ?? true) {
+                    return nil
+                }
                 let score = pathWeight(for: relation) * Double(bbox.height) * labelWeight(for: p.label)
                 guard score >= minPriorityToAnnounce else { return nil }
                 return ScoredHazard(
@@ -314,7 +319,8 @@ final class DangerAnnouncer: NSObject {
         let languageCode = isRomanian ? "ro-RO" : "en-US"
         utterance.voice = AVSpeechSynthesisVoice(language: languageCode)
             ?? AVSpeechSynthesisVoice(language: "en-US")
-        utterance.rate = AVSpeechUtteranceDefaultSpeechRate
+        let multiplier = (UserDefaults.standard.object(forKey: AppSettingsKeys.speechRateMultiplier) as? Double) ?? 1.0
+        utterance.rate = AVSpeechUtteranceDefaultSpeechRate * Float(multiplier)
         utterance.volume = 1.0
         synthesizer.speak(utterance)
     }
