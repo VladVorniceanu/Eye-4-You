@@ -73,7 +73,8 @@ struct CameraLiveView: View {
                     toggleLiveAction: viewModel.toggleLiveDetection,
                     togglePoseAction: viewModel.togglePoseDetection,
                     switchCameraAction: viewModel.switchCamera,
-                    describeAction: viewModel.describeScene
+                    describeAction: viewModel.describeScene,
+                    replayAction: viewModel.replayRecentScene
                 )
             }
             .padding(.horizontal, 16)
@@ -220,6 +221,7 @@ private struct CameraBottomPanel: View {
     let togglePoseAction: () -> Void
     let switchCameraAction: () -> Void
     let describeAction: () -> Void
+    let replayAction: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -233,17 +235,31 @@ private struct CameraBottomPanel: View {
             }
 
             if isLiveDetectionRunning {
-                Button(action: describeAction) {
-                    Label("Describe Surroundings", systemImage: "ear.fill")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.indigo, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                HStack(spacing: 10) {
+                    Button(action: describeAction) {
+                        Label("Descrie", systemImage: "ear.fill")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.indigo, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Describe surroundings")
+                    .accessibilityHint("Hear a spoken description of objects currently visible")
+
+                    Button(action: replayAction) {
+                        Label("30s", systemImage: "clock.arrow.circlepath")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.purple, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Replay last 30 seconds")
+                    .accessibilityHint("Hear a summary of everything detected in the last 30 seconds")
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Describe surroundings")
-                .accessibilityHint("Hear a spoken description of the objects currently visible in the camera")
             }
 
             HStack(alignment: .bottom, spacing: 12) {
