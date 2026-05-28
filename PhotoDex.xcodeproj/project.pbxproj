@@ -20,12 +20,12 @@
 		342B2F492F6C79A6007CA388 /* AnalysisModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B2F482F6C79A6007CA388 /* AnalysisModels.swift */; };
 		342B2F4B2F6C79A7007CA388 /* MainMenuViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B2F4A2F6C79A7007CA388 /* MainMenuViewModel.swift */; };
 		342B2F4D2F6C79A7007CA388 /* MLAnalysisViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 342B2F4C2F6C79A7007CA388 /* MLAnalysisViewModel.swift */; };
+		3441702A2FC725F600A6D940 /* yolo11n.mlpackage in Sources */ = {isa = PBXBuildFile; fileRef = 344170292FC725F600A6D940 /* yolo11n.mlpackage */; };
 		3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */; };
 		3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4872BBC2B3C006626CA /* MainMenuView.swift */; };
 		3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4892BBC6088006626CA /* CircleButton.swift */; };
 		3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B12BBEC4D5006626CA /* PhotoReview.swift */; };
 		3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3462D4B72BBFE590006626CA /* CameraViewModel.swift */; };
-		34650CC02BD8F44100A1CB90 /* yolov5s.mlmodel in Sources */ = {isa = PBXBuildFile; fileRef = 34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */; };
 		347930192FBB3C2C00539E3E /* DangerAnnouncer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 347930182FBB3C2C00539E3E /* DangerAnnouncer.swift */; };
 		348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */; };
 		348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */; };
@@ -60,6 +60,7 @@
 		342B2F482F6C79A6007CA388 /* AnalysisModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisModels.swift; sourceTree = "<group>"; };
 		342B2F4A2F6C79A7007CA388 /* MainMenuViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuViewModel.swift; sourceTree = "<group>"; };
 		342B2F4C2F6C79A7007CA388 /* MLAnalysisViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MLAnalysisViewModel.swift; sourceTree = "<group>"; };
+		344170292FC725F600A6D940 /* yolo11n.mlpackage */ = {isa = PBXFileReference; lastKnownFileType = folder.mlpackage; path = yolo11n.mlpackage; sourceTree = "<group>"; };
 		3458119B2BC6C6AB00F99102 /* CameraDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraDelegate.swift; sourceTree = "<group>"; };
 		3462D4872BBC2B3C006626CA /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		3462D4892BBC6088006626CA /* CircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleButton.swift; sourceTree = "<group>"; };
@@ -159,6 +160,7 @@
 			children = (
 				34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */,
 				3405BF112BC856BF00CE302F /* MobileNetV2.mlpackage */,
+				344170292FC725F600A6D940 /* yolo11n.mlpackage */,
 				348197A32B9F6BA7008E5F76 /* Assets.xcassets */,
 				348197A52B9F6BA7008E5F76 /* Preview Content */,
 			);
@@ -319,7 +321,7 @@
 				3405BF052BC820DC00CE302F /* CameraSwitchButton.swift in Sources */,
 				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
 				342B2F4D2F6C79A7007CA388 /* MLAnalysisViewModel.swift in Sources */,
-				34650CC02BD8F44100A1CB90 /* yolov5s.mlmodel in Sources */,
+				3441702A2FC725F600A6D940 /* yolo11n.mlpackage in Sources */,
 				34A71F242C27347000FA4717 /* ImageState.swift in Sources */,
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
