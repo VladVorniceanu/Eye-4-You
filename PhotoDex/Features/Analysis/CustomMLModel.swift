@@ -1,8 +1,28 @@
+//
+//  CustomMLModel.swift
+//  PhotoDex
+//
+//  Created by Vlad Vorniceanu on 5/18/26.
+//
+
 import CoreML
 import QuartzCore
 import UIKit
 @preconcurrency import Vision
 
+// Two-tier ML inference façade.
+//
+// Live mode  — YOLO11n only, running on .cpuAndNeuralEngine.
+//   MobileNetV2 is intentionally excluded: a full crop-scale-classify pass
+//   per detection takes ~80–150 ms, which would push the live pipeline above
+//   the 100 ms frame-budget ceiling and make the UX feel laggy.
+//   YOLO's COCO labels are sufficient for real-time danger announcements.
+//
+// Photo mode — YOLO11n + MobileNetV2 in parallel.
+//   With no frame-rate constraint, MobileNetV2 refines the top-3 bounding
+//   boxes for richer semantic labels (e.g. exact car model, breed of dog).
+//   "person" detections are skipped to avoid incorrect override with
+//   ImageNet labels that don't distinguish individuals.
 final class CustomMLModel: @unchecked Sendable {
     static let shared = CustomMLModel()
 
