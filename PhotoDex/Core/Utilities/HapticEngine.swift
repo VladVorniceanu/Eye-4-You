@@ -33,6 +33,10 @@ final class HapticEngine {
     private var currentProximity: Proximity?
     private var currentSide: HazardSide?
 
+    private var isEnabled: Bool {
+        (UserDefaults.standard.object(forKey: AppSettingsKeys.hapticsEnabled) as? Bool) ?? true
+    }
+
     private init() {
         heavy.prepare()
         medium.prepare()
@@ -41,6 +45,7 @@ final class HapticEngine {
 
     // One-shot alert fired at the moment of TTS announcement.
     func warn(proximity: Proximity, inPath: Bool) {
+        guard isEnabled else { return }
         switch (proximity, inPath) {
         case (.immediate, true):  heavy.impactOccurred()
         case (.near, true):       medium.impactOccurred()
@@ -52,7 +57,7 @@ final class HapticEngine {
     // Called every frame from DangerAnnouncer.process() with the top scored hazard.
     // Starts or updates the continuous pulse loop; pass nil to stop.
     func updateContinuousFeedback(for hazard: ScoredHazard?) {
-        guard let hazard, hazard.proximity != .far else {
+        guard isEnabled, let hazard, hazard.proximity != .far else {
             stopPulsing()
             return
         }

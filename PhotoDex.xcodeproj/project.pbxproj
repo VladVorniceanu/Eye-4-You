@@ -34,6 +34,7 @@
 		348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AD2B9F818A008E5F76 /* FrameView.swift */; };
 		348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AF2B9F8259008E5F76 /* CameraManager.swift */; };
 		349C9C9C2FC84A1F00CE3EC3 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */; };
+		349C9CA42FC86D1E00CE3EC3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CA32FC86D1E00CE3EC3 /* SettingsView.swift */; };
 		34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F172C25828600FA4717 /* SideMenuPredictions.swift */; };
 		34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F192C25A8D700FA4717 /* YoloCoreML.swift */; };
 		34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */; };
@@ -77,6 +78,7 @@
 		348197AD2B9F818A008E5F76 /* FrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameView.swift; sourceTree = "<group>"; };
 		348197AF2B9F8259008E5F76 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
+		349C9CA32FC86D1E00CE3EC3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		34A71F172C25828600FA4717 /* SideMenuPredictions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuPredictions.swift; sourceTree = "<group>"; };
 		34A71F192C25A8D700FA4717 /* YoloCoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YoloCoreML.swift; sourceTree = "<group>"; };
 		34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileNetV2CoreML.swift; sourceTree = "<group>"; };
@@ -137,6 +139,14 @@
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
+		349C9CA22FC86D1E00CE3EC3 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				349C9CA32FC86D1E00CE3EC3 /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 		34E664192F8F421B00D66C3F /* Core */ = {
 			isa = PBXGroup;
 			children = (
@@ -153,6 +163,7 @@
 				34E6641F2F8F422300D66C3F /* MainMenu */,
 				34E664202F8F422400D66C3F /* Camera */,
 				34E664212F8F422400D66C3F /* Analysis */,
+				349C9CA22FC86D1E00CE3EC3 /* Settings */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -335,6 +346,7 @@
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,
 				342B2F4B2F6C79A7007CA388 /* MainMenuViewModel.swift in Sources */,
 				3405BF0B2BC82F7F00CE302F /* FlashButton.swift in Sources */,
+				349C9CA42FC86D1E00CE3EC3 /* SettingsView.swift in Sources */,
 				34A71F202C272B8000FA4717 /* UIImage+Extension.swift in Sources */,
 				3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */,
 				3405BF072BC8215700CE302F /* FocusView.swift in Sources */,
