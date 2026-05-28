@@ -9,8 +9,14 @@ import AVFoundation
 import Foundation
 
 // Announces path hazards detected by the live YOLO model using text-to-speech.
-// A label must appear ≥10 times inside a 2-second window before the first
-// announcement, then a per-label cooldown prevents constant repetition.
+// Each frame, candidate detections are classified against a walking corridor
+// (Corridor.default) and scored by `pathWeight × bboxHeight × labelWeight`;
+// only the single highest-priority detection is considered for speech.
+// Anything `inPath` is eligible regardless of label, so unfamiliar obstacles
+// directly ahead still get called out; `adjacent` / `peripheral` detections
+// are filtered through the curated hazard list to keep audio uncluttered.
+// A label must accumulate ≥10 hits inside a 2-second window to clear debounce,
+// and per-label + global cooldowns prevent constant repetition.
 // Voice language follows the device's first preferred language (ro-RO or en-US).
 @MainActor
 final class DangerAnnouncer: NSObject {
@@ -22,6 +28,7 @@ final class DangerAnnouncer: NSObject {
 
     private var labelTimestamps: [String: [Date]] = [:]
     private var lastAnnouncedAt: [String: Date] = [:]
+    private var lastGlobalAnnouncementAt: Date?
 
     private var isDescribing = false
     private var onDescriptionComplete: (() -> Void)?
@@ -29,6 +36,12 @@ final class DangerAnnouncer: NSObject {
     private let windowDuration: TimeInterval = 2.0
     private let requiredHits = 10
     private let announceCooldown: TimeInterval = 5.0
+    // Hard cap on overall announcement rate so the user isn't talked over
+    // when several hazards trip their per-label cooldowns at the same time.
+    private let globalAnnounceCooldown: TimeInterval = 2.0
+    // Hazards whose composite priority falls below this are kept out of the
+    // speech queue entirely — they remain available for describeScene.
+    private let minPriorityToAnnounce: Double = 0.05
 
     private var isRomanian: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ro") == true
@@ -118,6 +131,8 @@ final class DangerAnnouncer: NSObject {
         synthesizer.delegate = self
     }
 
+    // Kept available (read-only) for diagnostics / fallback callers; the live
+    // pipeline now composes phrases dynamically via `composePhrase(for:)`.
     var dangerPhrases: [String: String] {
         isRomanian ? dangerPhrasesRO : dangerPhrasesEN
     }
@@ -127,26 +142,89 @@ final class DangerAnnouncer: NSObject {
 
         let now = Date()
         let cutoff = now.addingTimeInterval(-windowDuration)
+        let corridor = Corridor.default
 
-        let detectedDangers = Set(predictions.compactMap { dangerPhrases[$0.label] != nil ? $0.label : nil })
+        let scored = scoredHazards(from: predictions, corridor: corridor)
+        let currentLabels = Set(scored.map { $0.prediction.label })
 
-        for label in detectedDangers {
+        for label in currentLabels {
             var times = labelTimestamps[label] ?? []
             times.append(now)
             times = times.filter { $0 > cutoff }
             labelTimestamps[label] = times
-
-            guard times.count >= requiredHits else { continue }
-
-            if let last = lastAnnouncedAt[label], now.timeIntervalSince(last) < announceCooldown {
-                continue
-            }
-
-            speak(label: label, at: now)
+        }
+        for label in labelTimestamps.keys where !currentLabels.contains(label) {
+            labelTimestamps[label] = labelTimestamps[label]?.filter { $0 > cutoff }
         }
 
-        for label in labelTimestamps.keys where !detectedDangers.contains(label) {
-            labelTimestamps[label] = labelTimestamps[label]?.filter { $0 > cutoff }
+        guard let top = scored.first else { return }
+
+        if let lastGlobal = lastGlobalAnnouncementAt,
+           now.timeIntervalSince(lastGlobal) < globalAnnounceCooldown {
+            return
+        }
+        if let last = lastAnnouncedAt[top.prediction.label],
+           now.timeIntervalSince(last) < announceCooldown {
+            return
+        }
+        guard (labelTimestamps[top.prediction.label]?.count ?? 0) >= requiredHits else {
+            return
+        }
+
+        announce(hazard: top, at: now)
+    }
+
+    private func scoredHazards(from predictions: [Prediction], corridor: Corridor) -> [ScoredHazard] {
+        predictions
+            .compactMap { p -> ScoredHazard? in
+                guard let bbox = p.boundingBox else { return nil }
+                let relation = corridor.classify(bbox)
+                guard relation != .outsideRelevance else { return nil }
+                // Anything in the walking corridor is worth announcing, even if
+                // its COCO label isn't in the curated hazard list — an unknown
+                // obstacle right in front of the user is still a tripping risk.
+                // Adjacent/peripheral detections stay gated by the curated list
+                // to keep the audio channel from getting noisy.
+                if relation != .inPath, !isCuratedHazard(p.label) { return nil }
+                let score = pathWeight(for: relation) * Double(bbox.height) * labelWeight(for: p.label)
+                guard score >= minPriorityToAnnounce else { return nil }
+                return ScoredHazard(
+                    prediction: p,
+                    relation: relation,
+                    proximity: Proximity.from(bbox),
+                    side: corridor.side(for: bbox),
+                    score: score
+                )
+            }
+            .sorted { $0.score > $1.score }
+    }
+
+    private func isCuratedHazard(_ label: String) -> Bool {
+        dangerPhrasesEN[label] != nil
+    }
+
+    private func pathWeight(for relation: PathRelation) -> Double {
+        switch relation {
+        case .inPath:           return 1.0
+        case .adjacent:         return 0.4
+        case .peripheral:       return 0.15
+        case .outsideRelevance: return 0
+        }
+    }
+
+    private func labelWeight(for label: String) -> Double {
+        switch label {
+        case "car", "truck", "bus", "motorcycle":
+            return 1.0
+        case "person", "bicycle":
+            return 0.8
+        case "traffic light", "stop sign", "fire hydrant",
+            "chair", "bench", "dining table", "bed", "desk":
+            return 0.5
+        case "dog", "cat", "horse":
+            return 0.3
+        default:
+            return 0.4
         }
     }
 
@@ -201,6 +279,7 @@ final class DangerAnnouncer: NSObject {
         onDescriptionComplete = nil
         labelTimestamps = [:]
         lastAnnouncedAt = [:]
+        lastGlobalAnnouncementAt = nil
     }
 
     private func positionLabel(for box: CGRect) -> String {
@@ -220,7 +299,7 @@ final class DangerAnnouncer: NSObject {
     }
 
     private func utter(_ text: String) {
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers, .allowBluetooth])
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers, .allowBluetoothHFP])
         try? AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
 
         let utterance = AVSpeechUtterance(string: text)
@@ -232,10 +311,74 @@ final class DangerAnnouncer: NSObject {
         synthesizer.speak(utterance)
     }
 
-    private func speak(label: String, at time: Date) {
-        guard let phrase = dangerPhrases[label] else { return }
-        lastAnnouncedAt[label] = time
-        utter(phrase)
+    private func announce(hazard: ScoredHazard, at time: Date) {
+        lastAnnouncedAt[hazard.prediction.label] = time
+        lastGlobalAnnouncementAt = time
+        utter(composePhrase(for: hazard))
+    }
+
+    private func composePhrase(for hazard: ScoredHazard) -> String {
+        let label = hazard.prediction.label
+        let name = isRomanian
+            ? (labelNamesRO[label] ?? label.capitalized)
+            : label.capitalized
+        return isRomanian
+            ? phraseRO(name: name, relation: hazard.relation, proximity: hazard.proximity, side: hazard.side)
+            : phraseEN(name: name, relation: hazard.relation, proximity: hazard.proximity, side: hazard.side)
+    }
+
+    private func phraseRO(name: String, relation: PathRelation, proximity: Proximity, side: HazardSide) -> String {
+        switch (relation, proximity) {
+        case (.inPath, .immediate):
+            return "\(name) foarte aproape, în fața ta"
+        case (.inPath, .near):
+            return "\(name) în cale"
+        case (.inPath, _):
+            return "\(name) în față"
+        case (.adjacent, .immediate), (.adjacent, .near):
+            return "\(name) foarte aproape, \(sideRO(side))"
+        case (.adjacent, _):
+            return "\(name) \(sideRO(side))"
+        case (.peripheral, _):
+            return "Atenție, \(name.lowercased()) \(sideRO(side))"
+        case (.outsideRelevance, _):
+            return name
+        }
+    }
+
+    private func phraseEN(name: String, relation: PathRelation, proximity: Proximity, side: HazardSide) -> String {
+        switch (relation, proximity) {
+        case (.inPath, .immediate):
+            return "\(name) very close, right ahead"
+        case (.inPath, .near):
+            return "\(name) in your path"
+        case (.inPath, _):
+            return "\(name) ahead"
+        case (.adjacent, .immediate), (.adjacent, .near):
+            return "\(name) very close, \(sideEN(side))"
+        case (.adjacent, _):
+            return "\(name) \(sideEN(side))"
+        case (.peripheral, _):
+            return "Heads up, \(name.lowercased()) \(sideEN(side))"
+        case (.outsideRelevance, _):
+            return name
+        }
+    }
+
+    private func sideRO(_ side: HazardSide) -> String {
+        switch side {
+        case .left:   return "în stânga"
+        case .right:  return "în dreapta"
+        case .center: return "în față"
+        }
+    }
+
+    private func sideEN(_ side: HazardSide) -> String {
+        switch side {
+        case .left:   return "on the left"
+        case .right:  return "on the right"
+        case .center: return "ahead"
+        }
     }
 }
 
