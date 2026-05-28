@@ -1,3 +1,10 @@
+//
+//  CameraLiveView.swift
+//  PhotoDex
+//
+//  Created by Vlad Vorniceanu on 5/18/26.
+//
+
 import PhotosUI
 import SwiftUI
 

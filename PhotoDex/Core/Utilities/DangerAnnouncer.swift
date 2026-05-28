@@ -7,6 +7,7 @@
 
 import AVFoundation
 import Foundation
+import UIKit
 
 // Announces path hazards detected by the live YOLO model using text-to-speech.
 // Each frame, candidate detections are classified against a walking corridor
@@ -138,13 +139,19 @@ final class DangerAnnouncer: NSObject {
     }
 
     func process(predictions: [Prediction]) {
-        guard isEnabled, !isDescribing else { return }
+        guard isEnabled else { return }
+
+        let corridor = Corridor.default
+        let scored = scoredHazards(from: predictions, corridor: corridor)
+
+        // Continuous haptic runs every frame, independent of TTS cooldowns,
+        // so the user feels the obstacle as long as it stays in the corridor.
+        HapticEngine.shared.updateContinuousFeedback(for: scored.first)
+
+        guard !isDescribing else { return }
 
         let now = Date()
         let cutoff = now.addingTimeInterval(-windowDuration)
-        let corridor = Corridor.default
-
-        let scored = scoredHazards(from: predictions, corridor: corridor)
         let currentLabels = Set(scored.map { $0.prediction.label })
 
         for label in currentLabels {
@@ -275,6 +282,7 @@ final class DangerAnnouncer: NSObject {
 
     func reset() {
         synthesizer.stopSpeaking(at: .immediate)
+        HapticEngine.shared.stopPulsing()
         isDescribing = false
         onDescriptionComplete = nil
         labelTimestamps = [:]
@@ -314,6 +322,7 @@ final class DangerAnnouncer: NSObject {
     private func announce(hazard: ScoredHazard, at time: Date) {
         lastAnnouncedAt[hazard.prediction.label] = time
         lastGlobalAnnouncementAt = time
+        HapticEngine.shared.warn(proximity: hazard.proximity, inPath: hazard.relation == .inPath)
         utter(composePhrase(for: hazard))
     }
 
