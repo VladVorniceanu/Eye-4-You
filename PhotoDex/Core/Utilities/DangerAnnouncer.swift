@@ -9,6 +9,12 @@ import AVFoundation
 import Foundation
 import UIKit
 
+// Implemented by DepthNavigator so DangerAnnouncer can silence spatial audio
+// while any TTS utterance is playing, then restore it on completion.
+protocol RadarAudioGate: AnyObject {
+    func setRadarMuted(_ muted: Bool)
+}
+
 // Announces path hazards detected by the live YOLO model using text-to-speech.
 // Each frame, candidate detections are classified against a walking corridor
 // (Corridor.default) and scored by `pathWeight × bboxHeight × labelWeight`;
@@ -24,6 +30,11 @@ final class DangerAnnouncer: NSObject {
     static let shared = DangerAnnouncer()
 
     var isEnabled = true
+
+    /// Set by DepthNavigatorViewModel when Navigation Mode is active.
+    /// DangerAnnouncer calls setRadarMuted(true) before speaking and
+    /// setRadarMuted(false) when the utterance finishes or is cancelled.
+    weak var radarGate: RadarAudioGate?
 
     private let synthesizer = AVSpeechSynthesizer()
 
@@ -371,6 +382,16 @@ final class DangerAnnouncer: NSObject {
         let multiplier = (UserDefaults.standard.object(forKey: AppSettingsKeys.speechRateMultiplier) as? Double) ?? 1.0
         utterance.rate = AVSpeechUtteranceDefaultSpeechRate * Float(multiplier)
         utterance.volume = 1.0
+        radarGate?.setRadarMuted(true)
+        synthesizer.speak(utterance)
+    }
+
+    /// Speak a navigation-mode alert utterance (already configured by the caller).
+    /// Mutes spatial audio for the utterance duration, then restores it.
+    func speakNavigationAlert(_ utterance: AVSpeechUtterance) {
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers, .allowBluetoothHFP])
+        try? AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+        radarGate?.setRadarMuted(true)
         synthesizer.speak(utterance)
     }
 
@@ -453,7 +474,16 @@ extension DangerAnnouncer: AVSpeechSynthesizerDelegate {
         }
     }
 
+    nonisolated func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor [weak self] in
+            self?.handleFinished()
+        }
+    }
+
     private func handleFinished() {
+        // Restore spatial audio after every utterance, regardless of source.
+        radarGate?.setRadarMuted(false)
+
         guard isDescribing else { return }
         isDescribing = false
         let completion = onDescriptionComplete

@@ -131,6 +131,19 @@ struct MainMenuView: View {
                     accentColor: .green
                 )
             }
+
+            NavigationLink(destination: DepthNavigatorView()) {
+                MenuButtonLabel(
+                    systemImage: "sensor.tag.radiowaves.forward",
+                    title: "Mod Navigare",
+                    subtitle: viewModel.isNavigationModeAvailable
+                        ? "Ghidaj haptic și audio spațial prin LiDAR. Urmează sunetul pentru a naviga în siguranță."
+                        : "Necesită iPhone Pro cu LiDAR.",
+                    accentColor: .purple,
+                    isDisabled: !viewModel.isNavigationModeAvailable
+                )
+            }
+            .disabled(!viewModel.isNavigationModeAvailable)
         }
     }
 }
@@ -161,12 +174,13 @@ private struct MenuButtonLabel: View, Equatable {
     let subtitle: String
     let accentColor: Color
     var isLoading: Bool = false
+    var isDisabled: Bool = false
 
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(accentColor.opacity(0.14))
+                    .fill(accentColor.opacity(isDisabled ? 0.06 : 0.14))
                     .frame(width: 56, height: 56)
 
                 if isLoading {
@@ -175,7 +189,7 @@ private struct MenuButtonLabel: View, Equatable {
                 } else {
                     Image(systemName: systemImage)
                         .font(.title2.weight(.semibold))
-                        .foregroundStyle(accentColor)
+                        .foregroundStyle(isDisabled ? accentColor.opacity(0.4) : accentColor)
                 }
             }
 
