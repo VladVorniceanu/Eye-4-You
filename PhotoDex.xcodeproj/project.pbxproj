@@ -67,9 +67,8 @@
 		3462D4892BBC6088006626CA /* CircleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleButton.swift; sourceTree = "<group>"; };
 		3462D4B12BBEC4D5006626CA /* PhotoReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoReview.swift; sourceTree = "<group>"; };
 		3462D4B72BBFE590006626CA /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
-		34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */ = {isa = PBXFileReference; lastKnownFileType = file.mlmodel; path = yolov5s.mlmodel; sourceTree = "<group>"; };
 		347930182FBB3C2C00539E3E /* DangerAnnouncer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DangerAnnouncer.swift; sourceTree = "<group>"; };
-		3481979C2B9F6BA6008E5F76 /* PhotoDex.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoDex.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3481979C2B9F6BA6008E5F76 /* Eye4You.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Eye4You.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3481979F2B9F6BA6008E5F76 /* PhotoDexApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoDexApp.swift; sourceTree = "<group>"; };
 		348197A12B9F6BA6008E5F76 /* CameraLiveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraLiveView.swift; sourceTree = "<group>"; };
 		348197A32B9F6BA7008E5F76 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -112,7 +111,7 @@
 		3481979D2B9F6BA6008E5F76 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3481979C2B9F6BA6008E5F76 /* PhotoDex.app */,
+				3481979C2B9F6BA6008E5F76 /* Eye4You.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -160,7 +159,6 @@
 		34E6641B2F8F421C00D66C3F /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				34650CBF2BD8F44100A1CB90 /* yolov5s.mlmodel */,
 				3405BF112BC856BF00CE302F /* MobileNetV2.mlpackage */,
 				344170292FC725F600A6D940 /* yolo11n.mlpackage */,
 				348197A32B9F6BA7008E5F76 /* Assets.xcassets */,
@@ -260,7 +258,7 @@
 			);
 			name = PhotoDex;
 			productName = PhotoDex;
-			productReference = 3481979C2B9F6BA6008E5F76 /* PhotoDex.app */;
+			productReference = 3481979C2B9F6BA6008E5F76 /* Eye4You.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -500,7 +498,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.VladVorniceanu.PhotoDex;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = Eye4You;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -537,7 +535,7 @@
 				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.VladVorniceanu.PhotoDex;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = Eye4You;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
