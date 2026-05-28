@@ -1,120 +1,88 @@
-# PhotoDex — iOS Application for *On-Device* Image Analysis (Proof of Concept)
+# Eye 4 You — On-Device Assistive Vision for iOS
 
-> **Bachelor’s Thesis (2024)** — *Mobile Application: Support for Assisted Learning*  
-> **Author:** Vlad-Ioan Vorniceanu • **Scientific Coordinator:** Assoc. Prof. PhD Mihai Doinea
+> **Master's Thesis (2026)** — ASE București  
+> **Author:** Vlad-Ioan Vorniceanu
 
 ## Summary
 
-**PhotoDex** is my first iOS application developed individually, created as part of my bachelor’s thesis (2024). The project was designed as a **Proof of Concept** for the idea that the current iOS ecosystem (Core ML + Vision) enables running **complex data processing and Machine Learning models directly on the device** (*on-device*), without relying on external services.
+**Eye 4 You** is an iOS application I conceived and built as part of my Master's degree studies. Its purpose is to act as an **assistive tool for visually impaired users**, providing real-time scene understanding entirely on the device — no cloud calls, no data ever leaving the phone.
 
-The application analyzes photos and live camera frames for:
-- **object detection** within the scene,
-- **person identification/localization** and body pose estimation (Body Pose),
-- presenting results in an interface focused on **speed, privacy, and practical usability**.
+The app combines object detection, semantic classification, human pose estimation, and text-to-speech danger announcements into a single, privacy-preserving pipeline powered by Core ML and Vision.
 
 ---
 
-## Motivation and Context
+## Motivation
 
-The evolution of digital photography (high resolutions, large volumes of visual data) increases the need for tools that can **understand image content** quickly and locally. At the same time, privacy and latency make *cloud-only* solutions less suitable for real-time use cases.
-
-PhotoDex addresses these needs through an architecture that runs **local ML inference**, in real time, on iPhone/iPad.
+Visually impaired users face a gap between expensive dedicated hardware and generic smartphone assistants that rely on cloud connectivity. Eye 4 You fills that gap by running a full visual analysis pipeline locally on an iPhone's Neural Engine — delivering low latency, offline capability, and complete privacy.
 
 ---
 
-## Objectives
+## Features
 
-1. **Image capture for analysis**  
-   Integration of a camera module within the application, enabling an end-to-end flow.
-
-2. **Local image processing (on-device ML)**  
-   Integration and execution of ML models using **Core ML**, orchestrated through **Vision**.
-
-3. **LIVE frame analysis**  
-   Real-time analysis of the camera video stream, with results displayed as overlays.
+- **Live Detection** — real-time YOLO object detection over the camera stream with bounding-box overlays. Detected path hazards (people, vehicles, obstacles) are announced via TTS.
+- **Capture & Analyze** — take a photo, review it, then run the full analysis pipeline (object detection + semantic enrichment + pose estimation).
+- **Gallery Analysis** — pick an existing image from the photo library and run the same pipeline.
+- **Danger Announcements** — `DangerAnnouncer` accumulates detection hits in a sliding window and speaks audible warnings before they become a collision risk, with per-label cooldowns to avoid repetition.
+- **Body Pose Overlay** — Vision-based human pose estimation with keypoint visualization, toggleable on demand.
 
 ---
 
-## Main Features
+## ML Pipeline
 
-- **LIVE frame analysis** (camera stream)
-- **Image capture** from the camera
-- **Image selection from gallery**
-- **Analysis of captured/selected images** and display of results (detections / labels / pose)
+All inference is on-device using Core ML, orchestrated through Vision:
 
----
+| Model | Role |
+|-------|------|
+| **YOLO11n** (`yolo11n.mlpackage`) | Object detection — returns bounding boxes and class labels across 80 COCO classes. NMS runs in Swift. |
+| **MobileNetV2** (`MobileNetV2.mlpackage`) | Semantic enrichment — classifies the top-3 YOLO detections by cropping their region and re-scoring for richer labels. |
+| **Vision Body Pose** | Human pose estimation — skeleton keypoints rendered as an overlay. |
 
-## Architecture (overview)
-
-The logical flow is built around a local processing pipeline:
-
-1. **Capture** via `CameraManager` and `CameraDelegate`, followed by confirmation to initiate analysis.
-2. **Inference** through Vision requests, using integrated Core ML models (e.g., *YOLOv5s* and *MobileNetV2*), alongside **Body Pose Detection**.
-3. **Result fusion**: the combination of outputs (detections + classification/semantics + pose) is rendered in the UI; Body Pose keypoints can be displayed on demand.
-
-> Note: the models and exact integration details are those included in the project (within the app folder / Core ML resources).
+Compute units for YOLO are set to `.cpuAndNeuralEngine` for real-time performance. For photos, all three pipelines run concurrently via `async let`. For live frames, analysis is throttled to a configurable FPS via `CACurrentMediaTime`.
 
 ---
 
-## Technologies Used
+## Architecture
 
-- **Swift / iOS**
-- **Core ML** — integration and execution of ML models on-device
-- **Vision** — pre- and post-processing, analysis requests, and Body Pose Detection
-- **AVFoundation** (implicitly, for camera capture), where necessary
+```
+MainMenuView
+├── Live Detection  →  CameraViewModel → CameraManager → CustomMLModel.analyzeLiveFrame
+│                                                      → DangerAnnouncer (TTS)
+├── Capture Photo   →  CameraDelegate  → PhotoReview  → MLAnalysisViewModel
+│                                                      → CustomMLModel.analyzePhoto
+└── Gallery Pick    →  PHPicker        → PhotoReview  → MLAnalysisViewModel
+                                                       → CustomMLModel.analyzePhoto
+```
 
----
-
-## Slides from Thesis Presentation
-
-### Introduction / context
-<img width="2880" height="1620" alt="slide_2" src="https://github.com/user-attachments/assets/688c0fc3-9482-4047-850d-9cd381a9c706" />
-
-### Objectives and benefits
-<img width="2880" height="1620" alt="slide_3" src="https://github.com/user-attachments/assets/11a9e915-7218-4703-b4d4-7fe83dee666d" />
-
-### Main features
-<img width="2880" height="1620" alt="slide_5" src="https://github.com/user-attachments/assets/0906e554-d749-432a-9a72-189258c3d71b" />
-
-### Architecture (flow diagram)
-<img width="2880" height="1620" alt="slide_6" src="https://github.com/user-attachments/assets/2fa72704-b5e3-48c6-b61f-bd002b19472c" />
+`CustomMLModel` is a singleton facade that owns both VNCoreML model instances and serializes all inference on a concurrent `.userInitiated` dispatch queue. All model state is protected by `NSLock`.
 
 ---
 
-## How to Run the Project
+## Technologies
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/VladVorniceanu/Licenta2024.git
-   ```
-2. Open the project in Xcode:
-   - `PhotoDex.xcodeproj`
-3. Select a **real iPhone** (recommended for camera + ML performance) and run.
-4. On first launch, grant camera permission (if requested by the app).
-
-> Note: In the Simulator, camera access and ML performance may be limited.
+- **Swift / SwiftUI** — 100% Swift, MVVM architecture
+- **Core ML** — on-device model inference (YOLO11n, MobileNetV2)
+- **Vision** — VNCoreMLRequest, body pose detection
+- **AVFoundation** — live camera session, photo capture
+- **AVSpeechSynthesizer** — TTS danger announcements
+- **OSLog** — structured logging via `AppLogger`
 
 ---
 
-## Demonstrative Value (Proof of Concept)
+## How to Run
 
-PhotoDex practically demonstrates that:
-- ML inference and visual analysis can be performed **locally**, with low latency,
-- privacy is improved by avoiding sending images to servers,
-- mobile applications can integrate “heavy” pipelines (detection + pose analysis) into usable UX flows.
-
----
-
-## Limitations and Future Directions
-
-- systematic comparative evaluations (accuracy / FPS / energy consumption) across multiple devices;
-- UI/UX improvements for specific educational use cases;
-- expansion of detectable classes and result filtering strategies;
-- additional performance optimizations (quantization, batching, frame throttling).
+1. Clone the repository and open `PhotoDex.xcodeproj` in Xcode.
+2. Select a **real iPhone** — the Neural Engine and camera are required; Simulator has limited support.
+3. Build and run. Grant camera and photo library permissions on first launch.
+4. ML models warm up in the background on the main menu; "Live Detection" becomes available once they are ready.
 
 ---
 
-## License and Notes
+## Privacy
 
-- The code and resources in this repository are published according to the repo settings.
-- Included ML models may have separate licenses; check source licenses if reusing models/weights in commercial projects.
+Eye 4 You processes everything on-device. No images, detections, or user data are ever transmitted to a server. This is a core design constraint, not an afterthought.
+
+---
+
+## License
+
+Code and resources are published under the repository's default license. Bundled ML model weights may carry separate upstream licenses — check source licenses before reusing them in commercial projects.
