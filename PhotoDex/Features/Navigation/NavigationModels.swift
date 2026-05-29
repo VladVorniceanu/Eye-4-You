@@ -110,6 +110,15 @@ enum NavigationEvent {
     case allBlocked   // all lower zones < 0.5 m simultaneously
 }
 
+/// Simplified ARKit tracking state for SwiftUI display — avoids importing ARKit in the ViewModel.
+enum NavigationTrackingState {
+    case initializing
+    case normal
+    case limitedExcessiveMotion
+    case limitedInsufficientFeatures
+    case notAvailable
+}
+
 enum NavigationError: LocalizedError {
     case lidarNotAvailable
     case sessionFailed(Error)

@@ -42,6 +42,7 @@
 		349C9CAF2FC8E00F00CE3EC3 /* DepthNavigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CAE2FC8E00F00CE3EC3 /* DepthNavigator.swift */; };
 		349C9CB12FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CB02FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift */; };
 		349C9CB32FC8E01200CE3EC3 /* DepthNavigatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CB22FC8E01200CE3EC3 /* DepthNavigatorView.swift */; };
+		349C9CB52FCA303700CE3EC3 /* DepthHeatmapRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CB42FCA303700CE3EC3 /* DepthHeatmapRenderer.swift */; };
 		34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F172C25828600FA4717 /* SideMenuPredictions.swift */; };
 		34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F192C25A8D700FA4717 /* YoloCoreML.swift */; };
 		34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */; };
@@ -93,6 +94,7 @@
 		349C9CAE2FC8E00F00CE3EC3 /* DepthNavigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthNavigator.swift; sourceTree = "<group>"; };
 		349C9CB02FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthNavigatorViewModel.swift; sourceTree = "<group>"; };
 		349C9CB22FC8E01200CE3EC3 /* DepthNavigatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthNavigatorView.swift; sourceTree = "<group>"; };
+		349C9CB42FCA303700CE3EC3 /* DepthHeatmapRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthHeatmapRenderer.swift; sourceTree = "<group>"; };
 		34A71F172C25828600FA4717 /* SideMenuPredictions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuPredictions.swift; sourceTree = "<group>"; };
 		34A71F192C25A8D700FA4717 /* YoloCoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YoloCoreML.swift; sourceTree = "<group>"; };
 		34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileNetV2CoreML.swift; sourceTree = "<group>"; };
@@ -171,6 +173,7 @@
 				349C9CAE2FC8E00F00CE3EC3 /* DepthNavigator.swift */,
 				349C9CB02FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift */,
 				349C9CB22FC8E01200CE3EC3 /* DepthNavigatorView.swift */,
+				349C9CB42FCA303700CE3EC3 /* DepthHeatmapRenderer.swift */,
 			);
 			path = Navigation;
 			sourceTree = "<group>";
@@ -391,6 +394,7 @@
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
 				34A71F262C2737A800FA4717 /* LiveDetectSwitch.swift in Sources */,
 				34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */,
+				349C9CB52FCA303700CE3EC3 /* DepthHeatmapRenderer.swift in Sources */,
 				3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */,
 				349C9CAB2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift in Sources */,
 				3425AEB12EA6970C0039ECD1 /* Logging.swift in Sources */,

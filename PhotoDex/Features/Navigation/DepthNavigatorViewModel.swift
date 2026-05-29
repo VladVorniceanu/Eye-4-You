@@ -11,17 +11,31 @@ import SwiftUI
 @MainActor
 final class DepthNavigatorViewModel: ObservableObject {
 
-    @Published private(set) var isRunning = false
-    @Published var isAudioEnabled = false       // haptics only by default; user can toggle audio
+    // Navigation state
+    @Published private(set) var isRunning       = false
+    @Published var isAudioEnabled               = false
     @Published private(set) var clearDirection: ClearDirection = .none
-    @Published private(set) var clearDistance: Float = 0
+    @Published private(set) var clearDistance:  Float = 0
     @Published private(set) var nearestDistance: Float = .infinity
-    @Published private(set) var zoneDistances: [Float] = [.infinity, .infinity, .infinity]
+    @Published private(set) var zoneDistances:  [Float] = [.infinity, .infinity, .infinity]
     @Published var errorMessage: String?
     @Published private(set) var lastEvent: NavigationEvent?
 
+    // Calibration
+    @Published private(set) var isCalibrating:       Bool   = false
+    @Published private(set) var calibrationProgress: Double = 0
+    @Published private(set) var trackingState: NavigationTrackingState = .initializing
+
+    // Debug heatmap
+    @Published private(set) var isDebugMode:  Bool     = false
+    @Published private(set) var debugHeatmap: UIImage? = nil
+
     private let navigator = DepthNavigator.shared
     private let announcer = DangerAnnouncer.shared
+    private var calibrationTask: Task<Void, Never>?
+
+    private static let calibrationKey = "nav.calibrationCompleted"
+
     private var isRomanian: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ro") == true
     }
@@ -34,26 +48,35 @@ final class DepthNavigatorViewModel: ObservableObject {
     }
 
     func onDisappear() {
+        calibrationTask?.cancel()
+        calibrationTask = nil
         stop()
     }
 
     func start() {
         do {
-            navigator.onSnapshot = { [weak self] snapshot in self?.handleSnapshot(snapshot) }
-            navigator.onEvent    = { [weak self] event    in self?.handleEvent(event) }
+            navigator.onSnapshot            = { [weak self] snap  in self?.handleSnapshot(snap) }
+            navigator.onEvent               = { [weak self] event in self?.handleEvent(event) }
+            navigator.onHeatmap             = { [weak self] img   in self?.debugHeatmap = img }
+            navigator.onTrackingStateChange = { [weak self] state in self?.trackingState = state }
 
             try navigator.start()
-            isRunning = true
+            isRunning    = true
             errorMessage = nil
 
-            // Wire up DangerAnnouncer so it mutes spatial audio while speaking
             announcer.radarGate = navigator
 
-            // Announce mode activation for VoiceOver users
             let message = isRomanian
                 ? "Mod Navigare activ. Ține telefonul în față, ușor înclinat spre podea."
                 : "Navigation Mode active. Hold the phone in front of you, slightly tilted toward the ground."
             UIAccessibility.post(notification: .announcement, argument: message)
+
+            if UserDefaults.standard.bool(forKey: Self.calibrationKey) {
+                // Calibration already done on a previous launch — start guidance immediately
+                navigator.setGuidanceActive(true)
+            } else {
+                beginCalibration()
+            }
 
         } catch {
             errorMessage = error.localizedDescription
@@ -62,20 +85,56 @@ final class DepthNavigatorViewModel: ObservableObject {
     }
 
     func stop() {
+        calibrationTask?.cancel()
+        calibrationTask = nil
+
         navigator.stop()
-        navigator.onSnapshot = nil
-        navigator.onEvent    = nil
-        announcer.radarGate  = nil
-        isRunning            = false
-        clearDirection       = .none
-        clearDistance        = 0
-        nearestDistance      = .infinity
-        zoneDistances        = [.infinity, .infinity, .infinity]
+        navigator.onSnapshot            = nil
+        navigator.onEvent               = nil
+        navigator.onHeatmap             = nil
+        navigator.onTrackingStateChange = nil
+        announcer.radarGate = nil
+
+        isRunning           = false
+        isCalibrating       = false
+        calibrationProgress = 0
+        clearDirection      = .none
+        clearDistance       = 0
+        nearestDistance     = .infinity
+        zoneDistances       = [.infinity, .infinity, .infinity]
+        debugHeatmap        = nil
+        isDebugMode         = false
     }
 
     func toggleAudio() {
         isAudioEnabled.toggle()
         navigator.setAudioEnabled(isAudioEnabled)
+    }
+
+    func toggleDebug() {
+        isDebugMode.toggle()
+        navigator.setDebugEnabled(isDebugMode)
+        if !isDebugMode { debugHeatmap = nil }
+    }
+
+    /// Called when the user taps "Start Navigation" in the calibration overlay,
+    /// or automatically after the 5-second countdown completes.
+    func completeCalibration() {
+        calibrationTask?.cancel()
+        calibrationTask = nil
+
+        UserDefaults.standard.set(true, forKey: Self.calibrationKey)
+        navigator.setGuidanceActive(true)
+
+        withAnimation(.easeInOut(duration: 0.4)) {
+            isCalibrating = false
+        }
+        calibrationProgress = 1
+
+        let message = isRomanian
+            ? "Calibrare completă. Navigarea a început."
+            : "Calibration complete. Guidance started."
+        UIAccessibility.post(notification: .announcement, argument: message)
     }
 
     // MARK: - Computed UI helpers
@@ -102,7 +161,23 @@ final class DepthNavigatorViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Private handlers
+    // MARK: - Private
+
+    private func beginCalibration() {
+        isCalibrating       = true
+        calibrationProgress = 0
+
+        // Auto-complete after 5 s (50 × 0.1 s steps); user can skip earlier.
+        calibrationTask = Task {
+            let steps = 50
+            for i in 1...steps {
+                try? await Task.sleep(nanoseconds: 100_000_000)  // 0.1 s
+                guard !Task.isCancelled else { return }
+                calibrationProgress = Double(i) / Double(steps)
+            }
+            completeCalibration()
+        }
+    }
 
     private func handleSnapshot(_ snapshot: ObstacleSnapshot) {
         clearDirection  = snapshot.clearDirection
@@ -123,18 +198,13 @@ final class DepthNavigatorViewModel: ObservableObject {
     private func announceEvent(_ event: NavigationEvent) {
         let text: String = {
             switch event {
-            case .stepUp:
-                return isRomanian ? "Treaptă sus" : "Step up"
-            case .stepDown:
-                return isRomanian ? "Treaptă jos — atenție" : "Step down — caution"
-            case .doorAhead:
-                return isRomanian ? "Ușă înainte" : "Door ahead"
-            case .allBlocked:
-                return isRomanian ? "Calea este blocată — oprește-te" : "Path blocked — stop"
+            case .stepUp:    return isRomanian ? "Treaptă sus"              : "Step up"
+            case .stepDown:  return isRomanian ? "Treaptă jos — atenție"    : "Step down — caution"
+            case .doorAhead: return isRomanian ? "Ușă înainte"              : "Door ahead"
+            case .allBlocked:return isRomanian ? "Calea este blocată — oprește-te" : "Path blocked — stop"
             }
         }()
 
-        // Use a separate utterance so it does not fight the radar audio gate.
         let utterance = AVSpeechUtterance(string: text)
         let langCode  = isRomanian ? "ro-RO" : "en-US"
         utterance.voice  = AVSpeechSynthesisVoice(language: langCode) ?? AVSpeechSynthesisVoice(language: "en-US")
