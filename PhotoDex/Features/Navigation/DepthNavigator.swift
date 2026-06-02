@@ -31,6 +31,18 @@ final class DepthNavigator: NSObject {
     var onHeatmap: ((UIImage) -> Void)?
     /// Delivered on @MainActor whenever ARKit tracking state changes.
     var onTrackingStateChange: ((NavigationTrackingState) -> Void)?
+    /// Delivered on @MainActor for each navigation-relevant YOLO detection (≈3 Hz, per-label cooldown in ViewModel).
+    var onObjectAlert: ((NavigationObjectAlert) -> Void)?
+    /// Delivered on @MainActor with the full batch of navigation-relevant alerts from one YOLO cycle.
+    /// Used by PathAwareFilter for batch suppression — fires after all individual onObjectAlert calls.
+    var onObjectAlerts: (([NavigationObjectAlert]) -> Void)?
+    /// Delivered on @MainActor with ALL raw YOLO predictions for the debug overlay (no label filter).
+    var onDetections: (([Prediction]) -> Void)?
+    /// Delivered on @MainActor when movement direction or stationarity changes.
+    /// direction = predominant walking direction; stationary = speed < 0.05 m/s for ≥0.3 s.
+    var onTrajectoryUpdate: ((ClearDirection, Bool) -> Void)?
+    /// Delivered on @MainActor with the VFH+ steering result at processingHz.
+    var onSteering: ((SteeringResult) -> Void)?
 
     // MARK: - Public state (thread-safe via lock)
 
@@ -61,6 +73,7 @@ final class DepthNavigator: NSObject {
     private let queue           = DispatchQueue(label: "com.PhotoDex.navigation.depth", qos: .userInitiated)
     private let processor       = DepthFrameProcessor()
     private let heatmapRenderer = DepthHeatmapRenderer()
+    private let pathPlanner     = PathPlanner()
 
     private let lock = NSLock()
     private var _isRunning        = false
@@ -71,10 +84,27 @@ final class DepthNavigator: NSObject {
     private var _audioEngine:     SpatialAudioEngine?
 
     // All accessed only on `queue` — no lock needed
-    private var lastProcessed:       CFTimeInterval = 0
-    private var lastAllBlockedFired: CFTimeInterval = 0
-    private var lastHeatmapTime:     CFTimeInterval = 0
-    private var lastYaw:             Float          = .nan  // NaN = not yet initialized
+    private var lastProcessed:          CFTimeInterval = 0
+    private var lastAllBlockedFired:    CFTimeInterval = 0
+    private var lastHeatmapTime:        CFTimeInterval = 0
+    private var lastYoloTime:           CFTimeInterval = 0
+    private var lastYaw:                Float          = .nan  // NaN = not yet initialized
+    private var vfhLowConfidenceFrames: Int            = 0
+
+    // Motion tracking — position ring buffer for trajectory + stop detection
+    private struct PosSample { let time: CFTimeInterval; let position: SIMD3<Float> }
+    private var posHistory: [PosSample] = []
+    private var lastPublishedTrajectory: (direction: ClearDirection, stationary: Bool)?
+    private var latestSteering:          SteeringResult?
+
+    private static let yoloHz: Double = 3.0
+    private static let yoloMinBBoxArea: Double = 0.015
+    // internal so ViewModel can reference them for the stationary scan
+    static let navigationLabels: Set<String> = [
+        "person", "bicycle", "car", "motorcycle", "bus", "truck",
+        "traffic light", "stop sign", "fire hydrant",
+        "bench", "chair", "dog", "cat", "horse",
+    ]
 
     private override init() {
         super.init()
@@ -98,6 +128,7 @@ final class DepthNavigator: NSObject {
         _isRunning     = true
         lock.unlock()
 
+        NavigationSessionLogger.shared.startSession()
         session.run(makeARConfig(), options: [.resetTracking, .removeExistingAnchors])
         AppLogger.navigation.info("Navigation session started")
     }
@@ -115,11 +146,22 @@ final class DepthNavigator: NSObject {
         _audioEngine   = nil
         lock.unlock()
 
+        // Export session metrics to the log before resetting
+        let summary = NavigationSessionLogger.shared.exportSummary()
+        AppLogger.navigation.info("\(summary)")
+        NavigationSessionLogger.shared.reset()
+
         // Reset per-frame state for the next session
-        lastYaw              = .nan
-        lastProcessed        = 0
-        lastAllBlockedFired  = 0
-        lastHeatmapTime      = 0
+        lastYaw                  = .nan
+        lastProcessed            = 0
+        lastAllBlockedFired      = 0
+        lastHeatmapTime          = 0
+        lastYoloTime             = 0
+        vfhLowConfidenceFrames   = 0
+        posHistory               = []
+        lastPublishedTrajectory  = nil
+        latestSteering           = nil
+        pathPlanner.reset()
 
         h?.stop()
         a?.stop()
@@ -177,6 +219,9 @@ extension DepthNavigator: ARSessionDelegate {
         lock.unlock()
         guard running else { return }
 
+        // Trajectory tracking runs on every frame for accurate motion data
+        updateMotion(frame: frame, now: now)
+
         // --- Motion guard ---
         // Fast lateral sweeps contaminate the depth map with motion-blur artifacts,
         // producing false "close obstacle" readings.  Two checks:
@@ -228,20 +273,60 @@ extension DepthNavigator: ARSessionDelegate {
             Task { @MainActor [weak self] in self?.onHeatmap?(img) }
         }
 
+        // VFH+ path planning — runs every processed frame regardless of guidance state
+        let headingSector = Self.headingSector(for: lastPublishedTrajectory?.direction)
+        let rawSteering   = pathPlanner.computeSteering(frame: frame, currentHeadingSector: headingSector)
+
+        // Confidence fallback: if VFH confidence stays below 0.1 for more than 1 s
+        // (e.g. depth sensor temporarily degraded), derive steering from the zone-based
+        // snapshot so downstream audio/haptic guidance never silently goes dark.
+        if rawSteering.confidence < 0.1 { vfhLowConfidenceFrames += 1 }
+        else                            { vfhLowConfidenceFrames  = 0 }
+
+        let steering: SteeringResult
+        if vfhLowConfidenceFrames > hz {
+            let fallbackAngle: Float = {
+                switch snapshot.clearDirection {
+                case .left:  return -.pi / 4
+                case .right: return  .pi / 4
+                default:     return  0
+                }
+            }()
+            steering = SteeringResult(
+                angle:       fallbackAngle,
+                clearance:   snapshot.clearDistance,
+                confidence:  0,
+                direction:   snapshot.clearDirection,
+                valleyCount: 0
+            )
+            AppLogger.navigation.warning("VFH confidence sustained low — zone fallback active")
+        } else {
+            steering = rawSteering
+        }
+
+        latestSteering = steering
+        Task { @MainActor [weak self] in self?.onSteering?(steering) }
+
         // --- Guidance pipeline (suppressed during calibration scan) ---
         guard guidanceActive else { return }
 
-        // Continuous haptic intensity
-        haptics?.update(nearest: snapshot.nearest?.distance ?? .infinity)
+        // Suppress the continuous guide tone and haptic pulse while the user is standing still.
+        // A guide dog doesn't pull when stationary. Exception: imminent threat (< 0.8 m or all-blocked).
+        let isStationary     = lastPublishedTrajectory?.stationary == true
+        let isImminentThreat = steering.clearance < 0.8 || steering.direction == .none
+        if !isStationary || isImminentThreat {
+            haptics?.update(steering: steering)
+            audio?.update(steering: steering)
+        }
 
-        // Spatial audio guide tone
-        audio?.update(snapshot: snapshot)
-
-        // Stair / dropoff heuristic
-        let pitch = frame.camera.eulerAngles.x
-        if let event = processor.detectStep(snapshot: snapshot, cameraPitch: pitch) {
-            haptics?.fireTransient(for: event)
-            Task { @MainActor [weak self] in self?.onEvent?(event) }
+        // Stair / dropoff heuristic — can be disabled in Navigation Preferences
+        let stepsEnabled = UserDefaults.standard.object(forKey: NavPreferenceKeys.stepsDetection) as? Bool ?? true
+        if stepsEnabled {
+            let pitch = frame.camera.eulerAngles.x
+            if let event = processor.detectStep(snapshot: snapshot, cameraPitch: pitch) {
+                haptics?.fireTransient(for: event)
+                Task { @MainActor [weak self] in self?.onEvent?(event) }
+            }
         }
 
         // All-blocked: rate-limited to one event per 3 s
@@ -252,6 +337,21 @@ extension DepthNavigator: ARSessionDelegate {
             lastAllBlockedFired = now
             haptics?.fireTransient(for: .allBlocked)
             Task { @MainActor [weak self] in self?.onEvent?(.allBlocked) }
+        }
+
+        // YOLO fusion — run at yoloHz, independent of haptic/audio cadence
+        runYOLOIfNeeded(frame: frame, snapshot: snapshot, now: now)
+    }
+
+    func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
+        for case let plane as ARPlaneAnchor in anchors where plane.alignment == .horizontal {
+            pathPlanner.calibrateFloor(planeAnchor: plane)
+        }
+    }
+
+    func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
+        for case let plane as ARPlaneAnchor in anchors where plane.alignment == .horizontal {
+            pathPlanner.calibrateFloor(planeAnchor: plane)
         }
     }
 
@@ -267,6 +367,134 @@ extension DepthNavigator: ARSessionDelegate {
     func sessionInterruptionEnded(_ session: ARSession) {
         AppLogger.navigation.info("AR session interruption ended — resuming")
         session.run(makeARConfig())
+    }
+}
+
+// MARK: - YOLO fusion
+
+extension DepthNavigator {
+
+    /// Launches YOLO inference on the AR frame's camera image at ≈yoloHz.
+    /// Fires onDetections with all predictions (for the debug overlay), then
+    /// fires onObjectAlert for each navigation-relevant detection above the size threshold.
+    /// Both step detection and YOLO can be individually disabled in Navigation Preferences.
+    private func runYOLOIfNeeded(frame: ARFrame, snapshot: ObstacleSnapshot, now: CFTimeInterval) {
+        guard UserDefaults.standard.object(forKey: NavPreferenceKeys.yoloDetection) as? Bool ?? true else { return }
+        guard now - lastYoloTime >= 1.0 / Self.yoloHz else { return }
+        lastYoloTime = now
+
+        let pixelBuffer = frame.capturedImage
+        Task {
+            do {
+                let predictions = try await CustomMLModel.shared.detectObjects(pixelBuffer: pixelBuffer)
+
+                // All predictions → debug overlay
+                Task { @MainActor [weak self] in self?.onDetections?(predictions) }
+
+                // Navigation-relevant predictions → audio alerts
+                let alerts: [NavigationObjectAlert] = predictions.compactMap { prediction in
+                    guard Self.navigationLabels.contains(prediction.label),
+                          let bbox = prediction.boundingBox,
+                          Double(bbox.width * bbox.height) >= Self.yoloMinBBoxArea
+                    else { return nil }
+                    return NavigationObjectAlert(
+                        label: prediction.label,
+                        confidence: prediction.confidence,
+                        direction: Self.direction(from: bbox),
+                        estimatedDistance: Self.estimatedDistance(from: snapshot, bbox: bbox),
+                        boundingBox: bbox
+                    )
+                }
+                for alert in alerts {
+                    Task { @MainActor [weak self] in self?.onObjectAlert?(alert) }
+                }
+                if !alerts.isEmpty {
+                    Task { @MainActor [weak self] in self?.onObjectAlerts?(alerts) }
+                }
+            } catch {
+                AppLogger.navigation.error("Navigation YOLO error: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Maps a Vision bounding-box centre X to a left/center/right direction.
+    /// Internal so ViewModel can reuse it for the stationary-scan announcement.
+    static func direction(from bbox: CGRect) -> ClearDirection {
+        switch bbox.midX {
+        case ..<0.33: return .left
+        case 0.67...: return .right
+        default:      return .center
+        }
+    }
+
+    /// Maintains a 2-second position ring buffer and publishes trajectory direction
+    /// + stationarity whenever either value changes. Runs on every ARKit frame for
+    /// maximum accuracy; change-detects before dispatching to @MainActor.
+    private func updateMotion(frame: ARFrame, now: CFTimeInterval) {
+        let col3 = frame.camera.transform.columns.3
+        let pos   = SIMD3<Float>(col3.x, col3.y, col3.z)
+        posHistory.append(PosSample(time: now, position: pos))
+        // Prune to 2-second window
+        posHistory = posHistory.filter { now - $0.time <= 2.0 }
+
+        guard let oldest = posHistory.first, let newest = posHistory.last,
+              newest.time - oldest.time > 0.3
+        else { return }
+
+        let elapsed      = Float(newest.time - oldest.time)
+        let displacement = newest.position - oldest.position
+        let speed        = simd_length(displacement) / elapsed  // m/s
+
+        let isStationary = speed < 0.05
+
+        let direction: ClearDirection
+        if isStationary {
+            direction = .none
+        } else {
+            // Project displacement onto camera's right axis to classify lateral drift
+            let col0     = frame.camera.transform.columns.0
+            let camRight = SIMD3<Float>(col0.x, col0.y, col0.z)
+            let lateral  = simd_dot(displacement, camRight) / elapsed   // m/s in right direction
+            if lateral > 0.08 {
+                direction = .right
+            } else if lateral < -0.08 {
+                direction = .left
+            } else {
+                direction = .center
+            }
+        }
+
+        guard lastPublishedTrajectory?.direction != direction ||
+              lastPublishedTrajectory?.stationary != isStationary
+        else { return }
+        lastPublishedTrajectory = (direction, isStationary)
+        Task { @MainActor [weak self] in self?.onTrajectoryUpdate?(direction, isStationary) }
+    }
+
+    /// Maps a discrete walking direction to the nearest polar-histogram sector index.
+    /// Used to seed the VFH+ cost function with the current heading.
+    private static func headingSector(for direction: ClearDirection?) -> Int {
+        switch direction {
+        case .right: return 9    // 90° right = sector 9 (10° per sector)
+        case .left:  return 27   // 270° = sector 27 (90° left, wrapping around)
+        default:     return 0    // forward
+        }
+    }
+
+    /// Returns the LiDAR depth reading for the lower-row zone that corresponds
+    /// to the horizontal position of the bounding box.
+    private static func estimatedDistance(from snapshot: ObstacleSnapshot, bbox: CGRect) -> Float? {
+        let col: Int
+        switch bbox.midX {
+        case ..<0.33: col = 0
+        case 0.67...: col = 2
+        default:      col = 1
+        }
+        guard snapshot.cells.indices.contains(1),
+              snapshot.cells[1].indices.contains(col)
+        else { return nil }
+        let d = snapshot.cells[1][col].distance
+        return d.isFinite ? d : nil
     }
 }
 

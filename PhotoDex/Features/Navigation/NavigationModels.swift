@@ -110,6 +110,20 @@ enum NavigationEvent {
     case allBlocked   // all lower zones < 0.5 m simultaneously
 }
 
+/// A navigation-relevant object detected by YOLO in the AR camera frame,
+/// enriched with a distance estimate from the co-located LiDAR depth grid.
+struct NavigationObjectAlert {
+    let label: String
+    let confidence: Float
+    /// Horizontal direction derived from the YOLO bounding-box centre X.
+    let direction: ClearDirection
+    /// Metres from the corresponding LiDAR depth zone (lower row).
+    /// nil when the zone reading is unavailable or out of sensor range.
+    let estimatedDistance: Float?
+    /// Vision-normalised bounding box — needed by PathAwareFilter for corridor classification.
+    let boundingBox: CGRect
+}
+
 /// Simplified ARKit tracking state for SwiftUI display — avoids importing ARKit in the ViewModel.
 enum NavigationTrackingState {
     case initializing
@@ -117,6 +131,49 @@ enum NavigationTrackingState {
     case limitedExcessiveMotion
     case limitedInsufficientFeatures
     case notAvailable
+}
+
+/// UserDefaults keys for navigation-mode feature toggles.
+enum NavPreferenceKeys {
+    static let stepsDetection = "nav.stepsDetectionEnabled"
+    static let yoloDetection  = "nav.yoloDetectionEnabled"
+    static let verbosityLevel = "nav.verbosityLevel"
+}
+
+/// How many YOLO obstacles get announced via TTS. Stored as `Int` rawValue in UserDefaults.
+enum NavVerbosityLevel: Int, CaseIterable, Identifiable {
+    case minimal  = 0   // guide tone + haptics; TTS only for < 1 m in-path obstacles
+    case balanced = 1   // default: path-blocking obstacles with adaptive cooldown
+    case detailed = 2   // balanced + adjacent obstacles with exact distances
+
+    var id: Int { rawValue }
+
+    var localizedTitle: String {
+        let isRO = Locale.preferredLanguages.first?.hasPrefix("ro") == true
+        switch self {
+        case .minimal:  return isRO ? "Minimal"   : "Minimal"
+        case .balanced: return isRO ? "Echilibrat" : "Balanced"
+        case .detailed: return isRO ? "Detaliat"   : "Detailed"
+        }
+    }
+
+    var localizedDescription: String {
+        let isRO = Locale.preferredLanguages.first?.hasPrefix("ro") == true
+        switch self {
+        case .minimal:
+            return isRO
+                ? "Ton ghidaj + haptic. TTS doar pentru obstacole < 1 m în cale."
+                : "Guide tone + haptics only. TTS fires for < 1 m in-path obstacles."
+        case .balanced:
+            return isRO
+                ? "Anunță obstacolele din cale. Setare implicită."
+                : "Announces path-blocking obstacles. Default."
+        case .detailed:
+            return isRO
+                ? "Include și obstacolele adiacente cu distanța exactă."
+                : "Also announces adjacent obstacles with exact distances."
+        }
+    }
 }
 
 enum NavigationError: LocalizedError {
@@ -133,4 +190,62 @@ enum NavigationError: LocalizedError {
             return "AR session failed: \(e.localizedDescription)"
         }
     }
+}
+
+// MARK: - VFH Path Planning Structures (Phase 1 — PAD-Lite)
+
+/// Top-down binary occupancy grid projected from the LiDAR depth map.
+/// 40 × 40 cells at 15 cm each covers a 6 m × 6 m area; the user occupies the centre cell.
+struct BEVGrid {
+    static let gridSize:  Int   = 40
+    static let cellSize:  Float = 0.15   // metres per cell
+    static let maxRange:  Float = 5.0    // ignore depth readings beyond 5 m
+    static let minHeight: Float = 0.15   // ignore points below shin/curb height
+    static let maxHeight: Float = 2.0    // ignore ceiling-level points
+
+    /// [row (z)][col (x)], true = occupied. User at (gridSize/2, gridSize/2).
+    var cells: [[Bool]]
+
+    static var empty: BEVGrid {
+        BEVGrid(cells: Array(repeating: Array(repeating: false, count: gridSize), count: gridSize))
+    }
+}
+
+/// 1-D polar obstacle density histogram — 36 sectors of 10° each, covering 360°.
+struct PolarHistogram {
+    static let sectorCount: Int   = 36
+    static let sectorAngle: Float = 2 * Float.pi / Float(sectorCount)   // ≈ 0.1745 rad
+
+    /// Weighted obstacle density per sector. Values above ~0.35 are treated as blocked.
+    var densities: [Float]
+}
+
+/// A contiguous run of free sectors in the binary polar histogram — a candidate walking corridor.
+struct CandidateValley {
+    let startSector: Int
+    let endSector:   Int
+    let centerAngle: Float   // radians; 0 = straight ahead, positive = clockwise (right)
+    let width:       Int     // number of consecutive free sectors
+    let clearance:   Float   // estimated free distance in metres
+}
+
+/// VFH+ path planner output: a continuous steering angle with confidence and clearance.
+struct SteeringResult {
+    let angle:       Float          // radians; 0 = forward, positive = right
+    let clearance:   Float          // metres of free space in the chosen steering direction
+    let confidence:  Float          // 0..1; proportion of the polar histogram that is free here
+    let direction:   ClearDirection // backward-compatible discrete direction for existing engines
+    let valleyCount: Int            // candidate valleys found; 0 = all sectors blocked
+}
+
+/// A YOLO detection enriched by PathAwareFilter with VFH spatial context.
+/// Produced by `PathAwareFilter.filter(alerts:steering:)` and consumed by
+/// `DangerAnnouncer.processPathAwareDetection(_:)`.
+struct DepthValidatedDetection {
+    let prediction:       Prediction
+    let pathRelation:     PathRelation
+    let realDistance:     Float
+    let side:             HazardSide
+    let isInSteeringPath: Bool
+    let threatScore:      Double
 }

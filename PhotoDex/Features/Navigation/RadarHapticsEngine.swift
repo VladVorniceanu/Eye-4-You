@@ -53,8 +53,12 @@ final class RadarHapticsEngine {
 
     // MARK: - Per-frame update
 
-    /// Call once per processed AR frame. `distance` is the nearest obstacle in metres.
-    func update(nearest distance: Float) {
+    /// Call once per processed AR frame with the VFH+ steering result.
+    /// Intensity and sharpness track the clearance in the chosen steering direction;
+    /// direction == .none (all sectors blocked) drives maximum intensity immediately.
+    func update(steering: SteeringResult) {
+        let distance: Float = steering.direction == .none ? 0 : steering.clearance
+
         let intensity: Float = {
             switch distance {
             case ..<0.5:    return 1.0
@@ -67,8 +71,8 @@ final class RadarHapticsEngine {
         let sharpness = min(1, max(0, 1 - distance / 3.0))
 
         try? continuousPlayer.sendParameters([
-            .init(parameterID: .hapticIntensityControl, value: intensity,  relativeTime: 0),
-            .init(parameterID: .hapticSharpnessControl, value: sharpness,  relativeTime: 0),
+            .init(parameterID: .hapticIntensityControl, value: intensity, relativeTime: 0),
+            .init(parameterID: .hapticSharpnessControl, value: sharpness, relativeTime: 0),
         ], atTime: CHHapticTimeImmediate)
     }
 

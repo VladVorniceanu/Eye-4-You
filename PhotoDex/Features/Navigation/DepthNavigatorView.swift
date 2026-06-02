@@ -13,6 +13,7 @@ struct DepthNavigatorView: View {
 
     @StateObject private var viewModel = DepthNavigatorViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var showPreferences = false
 
     private var isRomanian: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ro") == true
@@ -24,6 +25,11 @@ struct DepthNavigatorView: View {
 
             VStack(spacing: 0) {
                 topBar
+                if viewModel.isStationary && !viewModel.isCalibrating {
+                    stationaryBanner
+                        .padding(.top, 8)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
                 Spacer()
                 directionCard
                 Spacer()
@@ -35,6 +41,7 @@ struct DepthNavigatorView: View {
                 Spacer()
                 stopButton
             }
+            .animation(.easeInOut(duration: 0.3), value: viewModel.isStationary)
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
 
@@ -52,6 +59,7 @@ struct DepthNavigatorView: View {
         .statusBarHidden(true)
         .onAppear  { viewModel.onAppear()    }
         .onDisappear { viewModel.onDisappear() }
+        .sheet(isPresented: $showPreferences) { NavigationPreferencesView() }
         .alert(isRomanian ? "Eroare" : "Error",
                isPresented: Binding(
                    get: { viewModel.errorMessage != nil },
@@ -80,6 +88,16 @@ struct DepthNavigatorView: View {
             }
 
             Spacer()
+
+            // Navigation preferences
+            Button(action: { showPreferences = true }) {
+                Image(systemName: "gearshape")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.gray)
+                    .padding(8)
+                    .background(.white.opacity(0.08), in: Circle())
+            }
+            .accessibilityLabel(isRomanian ? "Preferințe navigare" : "Navigation settings")
 
             // Debug heatmap toggle
             Button(action: viewModel.toggleDebug) {
@@ -151,23 +169,61 @@ struct DepthNavigatorView: View {
         .accessibilityHidden(true)
     }
 
+    private var stationaryBanner: some View {
+        Label(isRomanian ? "Stai pe loc — Scanare…" : "Stopped — Scanning scene…",
+              systemImage: "radar")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.orange)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+            .background(.orange.opacity(0.15), in: Capsule())
+            .accessibilityLabel(isRomanian ? "Utilizator oprit" : "User stationary")
+    }
+
     private var debugHeatmapPanel: some View {
         VStack(spacing: 4) {
-            Group {
+            // Canvas draws the LiDAR heatmap and overlays YOLO bounding boxes.
+            // Note: heatmap (256×192 landscape depth) and YOLO boxes (portrait camera)
+            // share the same horizontal axis but differ vertically — treat as approximate.
+            Canvas { ctx, size in
                 if let img = viewModel.debugHeatmap {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFit()
+                    ctx.draw(Image(uiImage: img), in: CGRect(origin: .zero, size: size))
                 } else {
-                    Color.white.opacity(0.04)
-                        .overlay {
-                            Text(isRomanian ? "Se încarcă…" : "Loading…")
-                                .font(.caption2)
-                                .foregroundStyle(.white.opacity(0.35))
-                        }
+                    ctx.fill(Path(CGRect(origin: .zero, size: size)),
+                             with: .color(.white.opacity(0.04)))
+                }
+                for pred in viewModel.rawDetections {
+                    guard let box = pred.boundingBox else { continue }
+                    // Vision coords (origin bottom-left, y up) → SwiftUI (origin top-left, y down)
+                    let rect = CGRect(
+                        x: box.minX * size.width,
+                        y: (1 - box.maxY) * size.height,
+                        width: box.width * size.width,
+                        height: box.height * size.height
+                    )
+                    let color = yoloBoxColor(for: pred.label)
+                    ctx.stroke(Path(rect), with: .color(color), lineWidth: 1.5)
+                    ctx.draw(
+                        Text(pred.label)
+                            .font(.system(size: 7, weight: .bold))
+                            .foregroundStyle(color),
+                        at: CGPoint(x: rect.minX + 2, y: rect.minY + 1),
+                        anchor: .topLeading
+                    )
                 }
             }
-            .frame(height: 120)
+            .overlay {
+                if viewModel.debugHeatmap == nil {
+                    Text(isRomanian ? "Se încarcă…" : "Loading…")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.35))
+                }
+            }
+            // Depth map is 128×96 with UIImage.orientation .right → displays as portrait 96×128.
+            // Fix aspect ratio so the Canvas matches the portrait heatmap instead of
+            // stretching to fill the full-width VStack.
+            .aspectRatio(CGFloat(96) / CGFloat(128), contentMode: .fit)
+            .frame(maxHeight: 120)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
             // Zone distance strip below heatmap
@@ -180,9 +236,25 @@ struct DepthNavigatorView: View {
                 }
             }
 
-            Text(isRomanian ? "Debug Heatmap LiDAR" : "LiDAR Debug Heatmap")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.25))
+            // Session stats strip: avg pipeline latency | near-miss count | TTS suppression %
+            HStack(spacing: 0) {
+                ForEach([
+                    ("cpu",                      viewModel.sessionAvgLatencyMs, Color.cyan),
+                    ("exclamationmark.triangle", "\(viewModel.sessionNearMisses)",
+                     viewModel.sessionNearMisses > 0 ? Color.red : Color.white.opacity(0.35)),
+                    ("speaker.slash",            viewModel.sessionSupprPct,     Color.green),
+                ], id: \.0) { icon, value, color in
+                    VStack(spacing: 1) {
+                        Text(value)
+                            .font(.system(.caption2, design: .monospaced).weight(.bold))
+                            .foregroundStyle(color)
+                        Image(systemName: icon)
+                            .font(.system(size: 7))
+                            .foregroundStyle(.white.opacity(0.35))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
         }
     }
 
@@ -214,6 +286,18 @@ struct DepthNavigatorView: View {
         case 0.5..<1.5: return .orange
         case 1.5..<3.0: return .yellow
         default:        return .green
+        }
+    }
+
+    private func yoloBoxColor(for label: String) -> Color {
+        switch label {
+        case "car", "truck", "bus", "motorcycle": return .red
+        case "person":                             return .yellow
+        case "traffic light":                      return .green
+        case "stop sign":                          return .orange
+        case "bicycle":                            return .cyan
+        case "dog", "cat", "horse":               return .purple
+        default:                                   return .white
         }
     }
 }
@@ -269,8 +353,8 @@ private struct CalibrationOverlay: View {
                         .foregroundStyle(.white)
 
                     Text(isRomanian
-                         ? "Mișcă ușor telefonul pentru a scana zona din jur."
-                         : "Slowly pan the phone around so LiDAR can build the scene.")
+                         ? "Mișcă ușor telefonul în jur și îndreaptă-l spre podea pentru a calibra înălțimea."
+                         : "Slowly pan the phone around and tilt toward the floor to calibrate ground height.")
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.6))
                         .multilineTextAlignment(.center)

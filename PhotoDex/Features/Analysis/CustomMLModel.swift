@@ -103,6 +103,27 @@ final class CustomMLModel: @unchecked Sendable {
         lastLiveAnalysisTime = 0
     }
 
+    /// Runs YOLO11n on a pixel buffer with no throttle — callers manage their own rate.
+    /// Used by the LiDAR navigation pipeline which operates at its own cadence (≈3 Hz).
+    func detectObjects(pixelBuffer: CVPixelBuffer,
+                       orientation: CGImagePropertyOrientation = .right) async throws -> [Prediction] {
+        try await withCheckedThrowingContinuation { continuation in
+            inferenceQueue.async {
+                do {
+                    let (yolo, _) = try self.loadModels()
+                    let predictions = try YoloCoreML.makePredictionsUsingYOLO(
+                        pixelBuffer: pixelBuffer,
+                        orientation: orientation,
+                        model: yolo
+                    )
+                    continuation.resume(returning: predictions)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
     private func modelsAsync() async throws -> (yolo: VNCoreMLModel, mobileNet: VNCoreMLModel) {
         try await withCheckedThrowingContinuation { continuation in
             inferenceQueue.async {

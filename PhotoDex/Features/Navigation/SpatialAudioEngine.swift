@@ -8,15 +8,16 @@
 import AVFoundation
 import Foundation
 
-/// Plays a spatially positioned guide tone that points toward the clearest
-/// walking direction. The user follows the sound to navigate safely.
+/// Plays a spatially positioned guide tone that steers the user toward the VFH+
+/// computed safe walking direction. The user follows the sound to navigate safely.
 ///
 /// Uses AVAudioEnvironmentNode with HRTF rendering. AirPods with Spatial Audio
 /// automatically apply head-tracked binaural positioning at the system level —
 /// no manual head-tracking integration is required.
 ///
 /// Sound semantics:
-///   • Position encodes WHERE to go (left / center / right in 3-D space).
+///   • Position encodes WHERE to go — continuous angle from VFH+ (sweeps smoothly,
+///     not snapping between left/center/right like the old discrete system).
 ///   • Ping interval encodes HOW CLEAR that path is (slower = more open).
 ///   • Pitch encodes URGENCY (880 Hz = relaxed, 660 Hz = caution, 330 Hz = alarm).
 ///
@@ -77,22 +78,22 @@ final class SpatialAudioEngine {
 
     // MARK: - Per-frame update
 
-    /// Called once per processed AR frame. Repositions the virtual sound source
-    /// and fires a guide ping when the cooldown interval has elapsed.
-    func update(snapshot: ObstacleSnapshot) {
+    /// Called once per processed AR frame with the VFH+ steering result.
+    /// Repositions the virtual sound source at a continuous angle and fires
+    /// a guide ping when the cooldown interval has elapsed.
+    func update(steering: SteeringResult) {
         lock.lock()
         let muted = _isMuted
         lock.unlock()
         guard !muted else { return }
 
-        let direction = snapshot.clearDirection
-        let distance  = snapshot.clearDistance
-
-        // Reposition virtual source — AirPods head-tracking keeps it world-anchored
-        let pos = direction.position3D
+        // Continuous angle positioning — sound source sweeps smoothly instead of
+        // snapping between three discrete positions
+        let pos = position3D(from: steering.angle)
         player.position = AVAudio3DPoint(x: pos.x, y: pos.y, z: pos.z)
 
-        let interval = pingInterval(distance: distance, direction: direction)
+        let blocked  = steering.direction == .none
+        let interval = pingInterval(clearance: steering.clearance, blocked: blocked)
         guard interval.isFinite else { return }
 
         let now = CACurrentMediaTime()
@@ -100,8 +101,8 @@ final class SpatialAudioEngine {
         lastPingTime = now
 
         let buffer: AVAudioPCMBuffer = {
-            if direction == .none  { return alarmBuffer   }
-            if distance  < 1.0    { return cautionBuffer  }
+            if blocked                    { return alarmBuffer   }
+            if steering.clearance < 1.0   { return cautionBuffer }
             return guideBuffer
         }()
 
@@ -130,17 +131,28 @@ final class SpatialAudioEngine {
 
     // MARK: - Private helpers
 
-    /// Interval between guide pings for a given clearance distance.
+    /// Places the virtual sound source on a circle of radius 2 m around the listener.
+    /// angle = 0 → straight ahead (−Z), positive angle → clockwise (right).
+    private func position3D(from angle: Float) -> (x: Float, y: Float, z: Float) {
+        let radius: Float = 2.0
+        return (
+            x:  radius * sin(angle),
+            y:  0,
+            z: -radius * cos(angle)   // −Z = forward in AVAudioEnvironmentNode space
+        )
+    }
+
+    /// Interval between guide pings based on VFH+ clearance distance.
     /// Shorter interval = more urgent. `.infinity` = silent (wide-open path).
-    private func pingInterval(distance: Float, direction: ClearDirection) -> Double {
-        if direction == .none { return 0.20 }   // all blocked: rapid alarm pings
-        switch distance {
-        case 3.5...:      return .infinity       // clear path — silence, no nudge needed
+    private func pingInterval(clearance: Float, blocked: Bool) -> Double {
+        if blocked { return 0.20 }          // all sectors blocked: rapid alarm pings
+        switch clearance {
+        case 3.5...:      return .infinity  // clear corridor — silence, no nudge needed
         case 2.5..<3.5:   return 1.5
         case 1.5..<2.5:   return 1.0
         case 1.0..<1.5:   return 0.6
         case 0.5..<1.0:   return 0.35
-        default:          return 0.20            // very close in best direction
+        default:          return 0.20       // very short clearance in best direction
         }
     }
 

@@ -66,6 +66,10 @@ final class DangerAnnouncer: NSObject {
     private let cacheWindow: TimeInterval = 30.0
     private let cacheWriteInterval: TimeInterval = 1.0
 
+    // Per-label cooldown for path-aware navigation alerts (separate from camera-frame pipeline).
+    private var navAnnouncedAt: [String: Date] = [:]
+    private let navAnnounceCooldown: TimeInterval = 10.0
+
     private var isRomanian: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ro") == true
     }
@@ -345,6 +349,7 @@ final class DangerAnnouncer: NSObject {
         onDescriptionComplete = nil
         labelTimestamps = [:]
         lastAnnouncedAt = [:]
+        navAnnouncedAt = [:]
         lastGlobalAnnouncementAt = nil
         recentSnapshots = []
         lastCacheWriteAt = nil
@@ -384,6 +389,52 @@ final class DangerAnnouncer: NSObject {
         utterance.volume = 1.0
         radarGate?.setRadarMuted(true)
         synthesizer.speak(utterance)
+    }
+
+    /// Called by DepthNavigatorViewModel after PathAwareFilter selects the top threat.
+    /// Applies a per-label + global cooldown, fires haptics, and utters the phrase.
+    func processPathAwareDetection(_ detection: DepthValidatedDetection) {
+        guard isEnabled else { return }
+        let now = Date()
+        if let lastGlobal = lastGlobalAnnouncementAt,
+           now.timeIntervalSince(lastGlobal) < globalAnnounceCooldown { return }
+        let label = detection.prediction.label
+        if let last = navAnnouncedAt[label],
+           now.timeIntervalSince(last) < navAnnounceCooldown { return }
+        navAnnouncedAt[label] = now
+        lastGlobalAnnouncementAt = now
+        let proximity = proximityFrom(realDistance: detection.realDistance,
+                                      bbox: detection.prediction.boundingBox ?? .zero)
+        HapticEngine.shared.warn(proximity: proximity, inPath: detection.pathRelation == .inPath)
+        utter(composePathAwarePhrase(detection))
+    }
+
+    private func composePathAwarePhrase(_ detection: DepthValidatedDetection) -> String {
+        let label     = detection.prediction.label
+        let name      = isRomanian ? (labelNamesRO[label] ?? label.capitalized) : label.capitalized
+        let proximity = proximityFrom(realDistance: detection.realDistance,
+                                      bbox: detection.prediction.boundingBox ?? .zero)
+        let base = isRomanian
+            ? phraseRO(name: name, relation: detection.pathRelation, proximity: proximity, side: detection.side)
+            : phraseEN(name: name, relation: detection.pathRelation, proximity: proximity, side: detection.side)
+        // Append metric distance for in-path obstacles where LiDAR reading is available.
+        guard detection.pathRelation == .inPath, detection.realDistance > 0 else { return base }
+        let distSuffix = isRomanian
+            ? String(format: ", la %.0f metri", detection.realDistance)
+            : String(format: ", %.0f meters away", detection.realDistance)
+        return base + distSuffix
+    }
+
+    /// Derives a `Proximity` bucket from the LiDAR real distance when available,
+    /// falling back to bounding-box height so the pipeline degrades gracefully.
+    private func proximityFrom(realDistance: Float, bbox: CGRect) -> Proximity {
+        guard realDistance > 0 else { return Proximity.from(bbox) }
+        switch realDistance {
+        case ..<0.8:         return .immediate
+        case 0.8..<1.5:      return .near
+        case 1.5..<3.0:      return .mid
+        default:             return .far
+        }
     }
 
     /// Speak a navigation-mode alert utterance (already configured by the caller).
