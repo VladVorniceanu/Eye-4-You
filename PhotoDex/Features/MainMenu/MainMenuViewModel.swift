@@ -1,3 +1,10 @@
+//
+//  MainMenuViewModel.swift
+//  PhotoDex
+//
+//  Created by Vlad Vorniceanu on 6/4/26.
+//
+
 import ARKit
 import PhotosUI
 import SwiftUI
@@ -14,7 +21,8 @@ final class MainMenuViewModel: ObservableObject {
         }
     }
     @Published private(set) var selectedImage: UIImage?
-    @Published private(set) var isShowingPhotoReview = false
+    /// Publicly settable so the sheet binding ($viewModel.isShowingPhotoReview) works without a custom Binding wrapper.
+    @Published var isShowingPhotoReview = false
     @Published private(set) var modelsLoaded = false
     @Published private(set) var isLoadingSelectedImage = false
 
@@ -36,10 +44,6 @@ final class MainMenuViewModel: ObservableObject {
         Task {
             modelsLoaded = await mlFacade.warmUp()
         }
-    }
-
-    func dismissPhotoReview() {
-        isShowingPhotoReview = false
     }
 
     private func handleSelection(_ item: PhotosPickerItem) async {

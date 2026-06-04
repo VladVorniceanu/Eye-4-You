@@ -59,6 +59,11 @@
 		34E30C262FCF087200BC07EB /* PathPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C252FCF087200BC07EB /* PathPlanner.swift */; };
 		34E30C282FCF0D7000BC07EB /* PathAwareFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C272FCF0D7000BC07EB /* PathAwareFilter.swift */; };
 		34E30C2A2FCF7E4F00BC07EB /* NavigationSessionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C292FCF7E4F00BC07EB /* NavigationSessionLogger.swift */; };
+		34E30C2C2FD1643100BC07EB /* NavigationHeroCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C2B2FD1643100BC07EB /* NavigationHeroCard.swift */; };
+		34E30C2E2FD1644300BC07EB /* AnalysisFeatureCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C2D2FD1644300BC07EB /* AnalysisFeatureCard.swift */; };
+		34E30C302FD1644F00BC07EB /* MenuLoadingOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C2F2FD1644F00BC07EB /* MenuLoadingOverlay.swift */; };
+		34E30C322FD164AA00BC07EB /* CalibrationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C312FD164AA00BC07EB /* CalibrationOverlay.swift */; };
+		34E30C342FD164B200BC07EB /* ZoneCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C332FD164B200BC07EB /* ZoneCell.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -116,6 +121,11 @@
 		34E30C252FCF087200BC07EB /* PathPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathPlanner.swift; sourceTree = "<group>"; };
 		34E30C272FCF0D7000BC07EB /* PathAwareFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathAwareFilter.swift; sourceTree = "<group>"; };
 		34E30C292FCF7E4F00BC07EB /* NavigationSessionLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationSessionLogger.swift; sourceTree = "<group>"; };
+		34E30C2B2FD1643100BC07EB /* NavigationHeroCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationHeroCard.swift; sourceTree = "<group>"; };
+		34E30C2D2FD1644300BC07EB /* AnalysisFeatureCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisFeatureCard.swift; sourceTree = "<group>"; };
+		34E30C2F2FD1644F00BC07EB /* MenuLoadingOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLoadingOverlay.swift; sourceTree = "<group>"; };
+		34E30C312FD164AA00BC07EB /* CalibrationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationOverlay.swift; sourceTree = "<group>"; };
+		34E30C332FD164B200BC07EB /* ZoneCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoneCell.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -189,6 +199,8 @@
 				34E30C252FCF087200BC07EB /* PathPlanner.swift */,
 				34E30C272FCF0D7000BC07EB /* PathAwareFilter.swift */,
 				34E30C292FCF7E4F00BC07EB /* NavigationSessionLogger.swift */,
+				34E30C312FD164AA00BC07EB /* CalibrationOverlay.swift */,
+				34E30C332FD164B200BC07EB /* ZoneCell.swift */,
 			);
 			path = Navigation;
 			sourceTree = "<group>";
@@ -261,6 +273,9 @@
 			children = (
 				3462D4872BBC2B3C006626CA /* MainMenuView.swift */,
 				342B2F4A2F6C79A7007CA388 /* MainMenuViewModel.swift */,
+				34E30C2B2FD1643100BC07EB /* NavigationHeroCard.swift */,
+				34E30C2D2FD1644300BC07EB /* AnalysisFeatureCard.swift */,
+				34E30C2F2FD1644F00BC07EB /* MenuLoadingOverlay.swift */,
 			);
 			path = MainMenu;
 			sourceTree = "<group>";
@@ -384,6 +399,7 @@
 				34A71F322C2899F000FA4717 /* PoseOverlayView.swift in Sources */,
 				3405BF012BC81EB100CE302F /* ShutterButton.swift in Sources */,
 				347930192FBB3C2C00539E3E /* DangerAnnouncer.swift in Sources */,
+				34E30C2C2FD1643100BC07EB /* NavigationHeroCard.swift in Sources */,
 				3405BF052BC820DC00CE302F /* CameraSwitchButton.swift in Sources */,
 				34E30C2A2FCF7E4F00BC07EB /* NavigationSessionLogger.swift in Sources */,
 				349C9CAD2FC8E00E00CE3EC3 /* SpatialAudioEngine.swift in Sources */,
@@ -406,10 +422,13 @@
 				349C9CA42FC86D1E00CE3EC3 /* SettingsView.swift in Sources */,
 				34A71F202C272B8000FA4717 /* UIImage+Extension.swift in Sources */,
 				3462D48A2BBC6088006626CA /* CircleButton.swift in Sources */,
+				34E30C2E2FD1644300BC07EB /* AnalysisFeatureCard.swift in Sources */,
 				3405BF072BC8215700CE302F /* FocusView.swift in Sources */,
 				34A71F2E2C28994000FA4717 /* PoseDetectionManager.swift in Sources */,
+				34E30C322FD164AA00BC07EB /* CalibrationOverlay.swift in Sources */,
 				348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */,
 				34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */,
+				34E30C342FD164B200BC07EB /* ZoneCell.swift in Sources */,
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
 				34E30C222FCCBC5B00BC07EB /* NavigationPreferencesView.swift in Sources */,
 				34A71F262C2737A800FA4717 /* LiveDetectSwitch.swift in Sources */,
@@ -419,6 +438,7 @@
 				349C9CAB2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift in Sources */,
 				3425AEB12EA6970C0039ECD1 /* Logging.swift in Sources */,
 				34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */,
+				34E30C302FD1644F00BC07EB /* MenuLoadingOverlay.swift in Sources */,
 				3405BF182BCACF7000CE302F /* MLAnalysisView.swift in Sources */,
 				3405BF122BC856BF00CE302F /* MobileNetV2.mlpackage in Sources */,
 			);
