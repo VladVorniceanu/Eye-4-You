@@ -15,7 +15,7 @@ struct DepthNavigatorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showPreferences = false
 
-    private var isRomanian: Bool {
+    private var isRO: Bool {
         Locale.preferredLanguages.first?.hasPrefix("ro") == true
     }
 
@@ -55,12 +55,12 @@ struct DepthNavigatorView: View {
             }
         }
         .animation(.easeInOut(duration: 0.4), value: viewModel.isCalibrating)
-        .navigationBarHidden(true)
-        .statusBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
+        .statusBar(hidden: true)
         .onAppear  { viewModel.onAppear()    }
         .onDisappear { viewModel.onDisappear() }
         .sheet(isPresented: $showPreferences) { NavigationPreferencesView() }
-        .alert(isRomanian ? "Eroare" : "Error",
+        .alert(isRO ? "Eroare" : "Error",
                isPresented: Binding(
                    get: { viewModel.errorMessage != nil },
                    set: { if !$0 { viewModel.errorMessage = nil } }
@@ -76,62 +76,60 @@ struct DepthNavigatorView: View {
     private var topBar: some View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(isRomanian ? "Mod Navigare" : "Navigation Mode")
-                    .font(.headline.weight(.bold))
+                Text(isRO ? "Mod Navigare" : "Navigation Mode")
+                    .font(.headline.bold())
                     .foregroundStyle(.white)
                 if viewModel.isRunning && !viewModel.isCalibrating {
-                    Label(isRomanian ? "LiDAR activ" : "LiDAR active",
+                    Label(isRO ? "LiDAR activ" : "LiDAR active",
                           systemImage: "sensor.tag.radiowaves.forward.fill")
-                        .font(.caption.weight(.medium))
+                        .font(.caption.bold())
                         .foregroundStyle(.green)
                 }
             }
 
             Spacer()
 
-            // Navigation preferences
             Button(action: { showPreferences = true }) {
-                Image(systemName: "gearshape")
-                    .font(.subheadline.weight(.semibold))
+                Label(isRO ? "Preferințe navigare" : "Navigation settings",
+                      systemImage: "gearshape")
+                    .labelStyle(.iconOnly)
+                    .font(.subheadline.bold())
                     .foregroundStyle(.gray)
                     .padding(8)
                     .background(.white.opacity(0.08), in: Circle())
             }
-            .accessibilityLabel(isRomanian ? "Preferințe navigare" : "Navigation settings")
 
-            // Debug heatmap toggle
             Button(action: viewModel.toggleDebug) {
-                Image(systemName: viewModel.isDebugMode
-                      ? "viewfinder.circle.fill"
-                      : "viewfinder.circle")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(viewModel.isDebugMode ? .cyan : .gray)
-                    .padding(8)
-                    .background(.white.opacity(0.08), in: Circle())
+                Label(
+                    viewModel.isDebugMode
+                        ? (isRO ? "Ascunde heatmap" : "Hide heatmap")
+                        : (isRO ? "Arată heatmap"   : "Show heatmap"),
+                    systemImage: viewModel.isDebugMode
+                        ? "viewfinder.circle.fill"
+                        : "viewfinder.circle"
+                )
+                .labelStyle(.iconOnly)
+                .font(.subheadline.bold())
+                .foregroundStyle(viewModel.isDebugMode ? .cyan : .gray)
+                .padding(8)
+                .background(.white.opacity(0.08), in: Circle())
             }
-            .accessibilityLabel(viewModel.isDebugMode
-                ? (isRomanian ? "Ascunde heatmap" : "Hide heatmap")
-                : (isRomanian ? "Arată heatmap"   : "Show heatmap"))
 
-            // Spatial audio toggle (haptics are always on)
             Button(action: viewModel.toggleAudio) {
                 Label(
-                    isRomanian ? "Audio" : "Audio",
+                    viewModel.isAudioEnabled
+                        ? (isRO ? "Dezactivează ghidaj audio" : "Disable audio guidance")
+                        : (isRO ? "Activează ghidaj audio"    : "Enable audio guidance"),
                     systemImage: viewModel.isAudioEnabled
                         ? "speaker.wave.3.fill"
                         : "speaker.slash.fill"
                 )
-                .font(.subheadline.weight(.semibold))
+                .font(.subheadline.bold())
                 .foregroundStyle(viewModel.isAudioEnabled ? .yellow : .gray)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
                 .background(.white.opacity(0.08), in: Capsule())
             }
-            .accessibilityLabel(
-                viewModel.isAudioEnabled
-                    ? (isRomanian ? "Dezactivează ghidaj audio" : "Disable audio guidance")
-                    : (isRomanian ? "Activează ghidaj audio"    : "Enable audio guidance")
-            )
         }
     }
 
@@ -158,9 +156,9 @@ struct DepthNavigatorView: View {
     private var zoneGrid: some View {
         HStack(spacing: 8) {
             ForEach(Array(zip(
-                [isRomanian ? "Stânga" : "Left",
-                 isRomanian ? "Centru" : "Center",
-                 isRomanian ? "Dreapta" : "Right"],
+                [isRO ? "Stânga" : "Left",
+                 isRO ? "Centru" : "Center",
+                 isRO ? "Dreapta" : "Right"],
                 viewModel.zoneDistances
             )), id: \.0) { label, dist in
                 ZoneCell(label: label, distance: dist)
@@ -170,14 +168,14 @@ struct DepthNavigatorView: View {
     }
 
     private var stationaryBanner: some View {
-        Label(isRomanian ? "Stai pe loc — Scanare…" : "Stopped — Scanning scene…",
+        Label(isRO ? "Stai pe loc — Scanare…" : "Stopped — Scanning scene…",
               systemImage: "radar")
-            .font(.caption.weight(.semibold))
+            .font(.caption.bold())
             .foregroundStyle(.orange)
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .background(.orange.opacity(0.15), in: Capsule())
-            .accessibilityLabel(isRomanian ? "Utilizator oprit" : "User stationary")
+            .accessibilityLabel(isRO ? "Utilizator oprit" : "User stationary")
     }
 
     private var debugHeatmapPanel: some View {
@@ -214,8 +212,8 @@ struct DepthNavigatorView: View {
             }
             .overlay {
                 if viewModel.debugHeatmap == nil {
-                    Text(isRomanian ? "Se încarcă…" : "Loading…")
-                        .font(.caption2)
+                    Text(isRO ? "Se încarcă…" : "Loading…")
+                        .font(.caption)
                         .foregroundStyle(.white.opacity(0.35))
                 }
             }
@@ -226,17 +224,15 @@ struct DepthNavigatorView: View {
             .frame(maxHeight: 120)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-            // Zone distance strip below heatmap
             HStack(spacing: 0) {
                 ForEach(Array(zip(["L", "C", "R"], viewModel.zoneDistances)), id: \.0) { lbl, dist in
                     Text(dist.isFinite ? String(format: "%.1f", dist) : "—")
-                        .font(.system(.caption2, design: .monospaced).weight(.bold))
+                        .font(.system(.caption, design: .monospaced).bold())
                         .foregroundStyle(zoneTextColor(dist))
                         .frame(maxWidth: .infinity)
                 }
             }
 
-            // Session stats strip: avg pipeline latency | near-miss count | TTS suppression %
             HStack(spacing: 0) {
                 ForEach([
                     ("cpu",                      viewModel.sessionAvgLatencyMs, Color.cyan),
@@ -246,7 +242,7 @@ struct DepthNavigatorView: View {
                 ], id: \.0) { icon, value, color in
                     VStack(spacing: 1) {
                         Text(value)
-                            .font(.system(.caption2, design: .monospaced).weight(.bold))
+                            .font(.system(.caption, design: .monospaced).bold())
                             .foregroundStyle(color)
                         Image(systemName: icon)
                             .font(.system(size: 7))
@@ -260,16 +256,18 @@ struct DepthNavigatorView: View {
 
     private var stopButton: some View {
         Button(action: { dismiss() }) {
-            Text(isRomanian ? "Oprește Navigarea" : "Stop Navigation")
-                .font(.title2.weight(.bold))
+            Text(isRO ? "Oprește Navigarea" : "Stop Navigation")
+                .font(.title2.bold())
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity)
                 .frame(height: 80)
                 .background(.white, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
-        .accessibilityLabel(isRomanian ? "Oprește navigarea" : "Stop navigation")
-        .accessibilityHint(isRomanian ? "Apasă pentru a ieși din modul navigare" : "Tap to exit navigation mode")
+        .accessibilityLabel(isRO ? "Oprește navigarea" : "Stop navigation")
+        .accessibilityHint(isRO ? "Apasă pentru a ieși din modul navigare" : "Tap to exit navigation mode")
     }
+
+    // MARK: - Helpers
 
     private var directionColor: Color {
         switch viewModel.clearDirection {
@@ -298,151 +296,6 @@ struct DepthNavigatorView: View {
         case "bicycle":                            return .cyan
         case "dog", "cat", "horse":               return .purple
         default:                                   return .white
-        }
-    }
-}
-
-// MARK: - CalibrationOverlay
-
-private struct CalibrationOverlay: View {
-
-    let progress:      Double
-    let trackingState: NavigationTrackingState
-    let onStart:       () -> Void
-
-    @State private var isPulsing = false
-
-    private var isRomanian: Bool {
-        Locale.preferredLanguages.first?.hasPrefix("ro") == true
-    }
-
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.92).ignoresSafeArea()
-
-            VStack(spacing: 28) {
-
-                // Pulsing LiDAR icon with circular progress ring
-                ZStack {
-                    Circle()
-                        .stroke(Color.purple.opacity(0.2), lineWidth: 8)
-                        .frame(width: 144, height: 144)
-
-                    Circle()
-                        .trim(from: 0, to: progress)
-                        .stroke(Color.purple,
-                                style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                        .frame(width: 144, height: 144)
-                        .rotationEffect(.degrees(-90))
-                        .animation(.linear(duration: 0.1), value: progress)
-
-                    Image(systemName: "sensor.tag.radiowaves.forward.fill")
-                        .font(.system(size: 52, weight: .thin))
-                        .foregroundStyle(Color.purple)
-                        .scaleEffect(isPulsing ? 1.12 : 0.92)
-                        .animation(
-                            .easeInOut(duration: 0.9).repeatForever(autoreverses: true),
-                            value: isPulsing
-                        )
-                }
-                .onAppear { isPulsing = true }
-
-                VStack(spacing: 10) {
-                    Text(isRomanian ? "Scanare mediu..." : "Scanning environment...")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
-
-                    Text(isRomanian
-                         ? "Mișcă ușor telefonul în jur și îndreaptă-l spre podea pentru a calibra înălțimea."
-                         : "Slowly pan the phone around and tilt toward the floor to calibrate ground height.")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.6))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 16)
-                }
-
-                trackingStateLabel
-
-                Button(action: onStart) {
-                    Text(isRomanian ? "Începe Navigarea" : "Start Navigation")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(.white, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-            }
-            .padding(.horizontal, 32)
-        }
-    }
-
-    @ViewBuilder
-    private var trackingStateLabel: some View {
-        let info = trackingInfo
-        Label(info.text, systemImage: info.icon)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(info.color)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(info.color.opacity(0.12), in: Capsule())
-    }
-
-    private var trackingInfo: (icon: String, text: String, color: Color) {
-        switch trackingState {
-        case .normal:
-            return ("checkmark.circle.fill",
-                    isRomanian ? "Semnal bun — puteți continua" : "Good signal — ready",
-                    .green)
-        case .limitedExcessiveMotion:
-            return ("exclamationmark.circle.fill",
-                    isRomanian ? "Mișcare prea rapidă — încetinește" : "Moving too fast — slow down",
-                    .orange)
-        case .limitedInsufficientFeatures:
-            return ("light.max",
-                    isRomanian ? "Puține detalii — îmbunătățește iluminarea" : "Low features — try better lighting",
-                    .yellow)
-        case .initializing, .notAvailable:
-            return ("circle.dotted",
-                    isRomanian ? "Inițializare..." : "Initializing...",
-                    .gray)
-        }
-    }
-}
-
-// MARK: - ZoneCell
-
-private struct ZoneCell: View {
-    let label: String
-    let distance: Float
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Text(label)
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.5))
-
-            Text(distanceString)
-                .font(.system(.body, design: .monospaced).weight(.bold))
-                .foregroundStyle(zoneColor)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
-        .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-
-    private var distanceString: String {
-        distance.isFinite ? String(format: "%.1f m", distance) : "—"
-    }
-
-    private var zoneColor: Color {
-        guard distance.isFinite else { return .white.opacity(0.4) }
-        switch distance {
-        case ..<0.5:    return .red
-        case 0.5..<1.5: return .orange
-        case 1.5..<3.0: return .yellow
-        default:        return .green
         }
     }
 }
