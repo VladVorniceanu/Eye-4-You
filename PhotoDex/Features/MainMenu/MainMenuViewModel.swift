@@ -1,3 +1,4 @@
+import ARKit
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -16,6 +17,10 @@ final class MainMenuViewModel: ObservableObject {
     @Published private(set) var isShowingPhotoReview = false
     @Published private(set) var modelsLoaded = false
     @Published private(set) var isLoadingSelectedImage = false
+
+    var isNavigationModeAvailable: Bool {
+        ARWorldTrackingConfiguration.supportsFrameSemantics(.smoothedSceneDepth)
+    }
 
     private let mlFacade: CustomMLModel
     private var didInitialize = false

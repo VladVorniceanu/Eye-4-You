@@ -35,6 +35,14 @@
 		348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348197AF2B9F8259008E5F76 /* CameraManager.swift */; };
 		349C9C9C2FC84A1F00CE3EC3 /* HapticEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */; };
 		349C9CA42FC86D1E00CE3EC3 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CA32FC86D1E00CE3EC3 /* SettingsView.swift */; };
+		349C9CA72FC8E00A00CE3EC3 /* NavigationModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CA62FC8E00A00CE3EC3 /* NavigationModels.swift */; };
+		349C9CA92FC8E00B00CE3EC3 /* DepthFrameProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CA82FC8E00B00CE3EC3 /* DepthFrameProcessor.swift */; };
+		349C9CAB2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CAA2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift */; };
+		349C9CAD2FC8E00E00CE3EC3 /* SpatialAudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CAC2FC8E00E00CE3EC3 /* SpatialAudioEngine.swift */; };
+		349C9CAF2FC8E00F00CE3EC3 /* DepthNavigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CAE2FC8E00F00CE3EC3 /* DepthNavigator.swift */; };
+		349C9CB12FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CB02FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift */; };
+		349C9CB32FC8E01200CE3EC3 /* DepthNavigatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CB22FC8E01200CE3EC3 /* DepthNavigatorView.swift */; };
+		349C9CB52FCA303700CE3EC3 /* DepthHeatmapRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 349C9CB42FCA303700CE3EC3 /* DepthHeatmapRenderer.swift */; };
 		34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F172C25828600FA4717 /* SideMenuPredictions.swift */; };
 		34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F192C25A8D700FA4717 /* YoloCoreML.swift */; };
 		34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */; };
@@ -46,6 +54,11 @@
 		34A71F2E2C28994000FA4717 /* PoseDetectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F2D2C28994000FA4717 /* PoseDetectionManager.swift */; };
 		34A71F302C2899D200FA4717 /* PoseDetectSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F2F2C2899D200FA4717 /* PoseDetectSwitch.swift */; };
 		34A71F322C2899F000FA4717 /* PoseOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A71F312C2899F000FA4717 /* PoseOverlayView.swift */; };
+		34E30C222FCCBC5B00BC07EB /* NavigationPreferencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C212FCCBC5B00BC07EB /* NavigationPreferencesView.swift */; };
+		34E30C242FCCC4CA00BC07EB /* IMPLEMENTATION_PATH_AWARE_GUIDANCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 34E30C232FCCC4CA00BC07EB /* IMPLEMENTATION_PATH_AWARE_GUIDANCE.md */; };
+		34E30C262FCF087200BC07EB /* PathPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C252FCF087200BC07EB /* PathPlanner.swift */; };
+		34E30C282FCF0D7000BC07EB /* PathAwareFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C272FCF0D7000BC07EB /* PathAwareFilter.swift */; };
+		34E30C2A2FCF7E4F00BC07EB /* NavigationSessionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34E30C292FCF7E4F00BC07EB /* NavigationSessionLogger.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -79,6 +92,14 @@
 		348197AF2B9F8259008E5F76 /* CameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraManager.swift; sourceTree = "<group>"; };
 		349C9C9B2FC84A1F00CE3EC3 /* HapticEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticEngine.swift; sourceTree = "<group>"; };
 		349C9CA32FC86D1E00CE3EC3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		349C9CA62FC8E00A00CE3EC3 /* NavigationModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationModels.swift; sourceTree = "<group>"; };
+		349C9CA82FC8E00B00CE3EC3 /* DepthFrameProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthFrameProcessor.swift; sourceTree = "<group>"; };
+		349C9CAA2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RadarHapticsEngine.swift; sourceTree = "<group>"; };
+		349C9CAC2FC8E00E00CE3EC3 /* SpatialAudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialAudioEngine.swift; sourceTree = "<group>"; };
+		349C9CAE2FC8E00F00CE3EC3 /* DepthNavigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthNavigator.swift; sourceTree = "<group>"; };
+		349C9CB02FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthNavigatorViewModel.swift; sourceTree = "<group>"; };
+		349C9CB22FC8E01200CE3EC3 /* DepthNavigatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthNavigatorView.swift; sourceTree = "<group>"; };
+		349C9CB42FCA303700CE3EC3 /* DepthHeatmapRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DepthHeatmapRenderer.swift; sourceTree = "<group>"; };
 		34A71F172C25828600FA4717 /* SideMenuPredictions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideMenuPredictions.swift; sourceTree = "<group>"; };
 		34A71F192C25A8D700FA4717 /* YoloCoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YoloCoreML.swift; sourceTree = "<group>"; };
 		34A71F1B2C25A95B00FA4717 /* MobileNetV2CoreML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileNetV2CoreML.swift; sourceTree = "<group>"; };
@@ -90,6 +111,11 @@
 		34A71F2D2C28994000FA4717 /* PoseDetectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectionManager.swift; sourceTree = "<group>"; };
 		34A71F2F2C2899D200FA4717 /* PoseDetectSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseDetectSwitch.swift; sourceTree = "<group>"; };
 		34A71F312C2899F000FA4717 /* PoseOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PoseOverlayView.swift; sourceTree = "<group>"; };
+		34E30C212FCCBC5B00BC07EB /* NavigationPreferencesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationPreferencesView.swift; sourceTree = "<group>"; };
+		34E30C232FCCC4CA00BC07EB /* IMPLEMENTATION_PATH_AWARE_GUIDANCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_PATH_AWARE_GUIDANCE.md; sourceTree = SOURCE_ROOT; };
+		34E30C252FCF087200BC07EB /* PathPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathPlanner.swift; sourceTree = "<group>"; };
+		34E30C272FCF0D7000BC07EB /* PathAwareFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathAwareFilter.swift; sourceTree = "<group>"; };
+		34E30C292FCF7E4F00BC07EB /* NavigationSessionLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationSessionLogger.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +132,7 @@
 		348197932B9F6BA6008E5F76 = {
 			isa = PBXGroup;
 			children = (
+				34E30C232FCCC4CA00BC07EB /* IMPLEMENTATION_PATH_AWARE_GUIDANCE.md */,
 				3481979E2B9F6BA6008E5F76 /* PhotoDex */,
 				3481979D2B9F6BA6008E5F76 /* Products */,
 			);
@@ -147,6 +174,25 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
+		349C9CA52FC8DF6600CE3EC3 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				349C9CA62FC8E00A00CE3EC3 /* NavigationModels.swift */,
+				349C9CA82FC8E00B00CE3EC3 /* DepthFrameProcessor.swift */,
+				349C9CAA2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift */,
+				349C9CAC2FC8E00E00CE3EC3 /* SpatialAudioEngine.swift */,
+				349C9CAE2FC8E00F00CE3EC3 /* DepthNavigator.swift */,
+				349C9CB02FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift */,
+				349C9CB22FC8E01200CE3EC3 /* DepthNavigatorView.swift */,
+				349C9CB42FCA303700CE3EC3 /* DepthHeatmapRenderer.swift */,
+				34E30C212FCCBC5B00BC07EB /* NavigationPreferencesView.swift */,
+				34E30C252FCF087200BC07EB /* PathPlanner.swift */,
+				34E30C272FCF0D7000BC07EB /* PathAwareFilter.swift */,
+				34E30C292FCF7E4F00BC07EB /* NavigationSessionLogger.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
 		34E664192F8F421B00D66C3F /* Core */ = {
 			isa = PBXGroup;
 			children = (
@@ -164,6 +210,7 @@
 				34E664202F8F422400D66C3F /* Camera */,
 				34E664212F8F422400D66C3F /* Analysis */,
 				349C9CA22FC86D1E00CE3EC3 /* Settings */,
+				349C9CA52FC8DF6600CE3EC3 /* Navigation */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -312,6 +359,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34E30C242FCCC4CA00BC07EB /* IMPLEMENTATION_PATH_AWARE_GUIDANCE.md in Resources */,
 				348197A72B9F6BA7008E5F76 /* Preview Assets.xcassets in Resources */,
 				34296A2E2FC46738000845A0 /* MVP_PLAN.md in Resources */,
 				348197A42B9F6BA7008E5F76 /* Assets.xcassets in Resources */,
@@ -325,22 +373,31 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				349C9CA92FC8E00B00CE3EC3 /* DepthFrameProcessor.swift in Sources */,
 				34A71F1E2C2728A300FA4717 /* PermissionsManager.swift in Sources */,
+				349C9CB32FC8E01200CE3EC3 /* DepthNavigatorView.swift in Sources */,
 				34A71F302C2899D200FA4717 /* PoseDetectSwitch.swift in Sources */,
 				34A71F222C27343400FA4717 /* OverlayView.swift in Sources */,
+				349C9CAF2FC8E00F00CE3EC3 /* DepthNavigator.swift in Sources */,
 				3462D4882BBC2B3C006626CA /* MainMenuView.swift in Sources */,
+				349C9CB12FC8E01000CE3EC3 /* DepthNavigatorViewModel.swift in Sources */,
 				34A71F322C2899F000FA4717 /* PoseOverlayView.swift in Sources */,
 				3405BF012BC81EB100CE302F /* ShutterButton.swift in Sources */,
 				347930192FBB3C2C00539E3E /* DangerAnnouncer.swift in Sources */,
 				3405BF052BC820DC00CE302F /* CameraSwitchButton.swift in Sources */,
+				34E30C2A2FCF7E4F00BC07EB /* NavigationSessionLogger.swift in Sources */,
+				349C9CAD2FC8E00E00CE3EC3 /* SpatialAudioEngine.swift in Sources */,
 				348197AE2B9F818A008E5F76 /* FrameView.swift in Sources */,
 				342B2F4D2F6C79A7007CA388 /* MLAnalysisViewModel.swift in Sources */,
 				3441702A2FC725F600A6D940 /* yolo11n.mlpackage in Sources */,
+				34E30C282FCF0D7000BC07EB /* PathAwareFilter.swift in Sources */,
 				34A71F242C27347000FA4717 /* ImageState.swift in Sources */,
 				3458119C2BC6C6AB00F99102 /* CameraDelegate.swift in Sources */,
 				348197A22B9F6BA6008E5F76 /* CameraLiveView.swift in Sources */,
+				34E30C262FCF087200BC07EB /* PathPlanner.swift in Sources */,
 				342B2F492F6C79A6007CA388 /* AnalysisModels.swift in Sources */,
 				3405BF032BC8201800CE302F /* GalleryThumbnail.swift in Sources */,
+				349C9CA72FC8E00A00CE3EC3 /* NavigationModels.swift in Sources */,
 				349C9C9C2FC84A1F00CE3EC3 /* HapticEngine.swift in Sources */,
 				3405BF1A2BCAD84300CE302F /* CustomMLModel.swift in Sources */,
 				3462D4B82BBFE590006626CA /* CameraViewModel.swift in Sources */,
@@ -354,9 +411,12 @@
 				348197B02B9F8259008E5F76 /* CameraManager.swift in Sources */,
 				34A71F182C25828600FA4717 /* SideMenuPredictions.swift in Sources */,
 				348197A02B9F6BA6008E5F76 /* PhotoDexApp.swift in Sources */,
+				34E30C222FCCBC5B00BC07EB /* NavigationPreferencesView.swift in Sources */,
 				34A71F262C2737A800FA4717 /* LiveDetectSwitch.swift in Sources */,
 				34A71F1C2C25A95B00FA4717 /* MobileNetV2CoreML.swift in Sources */,
+				349C9CB52FCA303700CE3EC3 /* DepthHeatmapRenderer.swift in Sources */,
 				3462D4B22BBEC4D5006626CA /* PhotoReview.swift in Sources */,
+				349C9CAB2FC8E00C00CE3EC3 /* RadarHapticsEngine.swift in Sources */,
 				3425AEB12EA6970C0039ECD1 /* Logging.swift in Sources */,
 				34A71F1A2C25A8D700FA4717 /* YoloCoreML.swift in Sources */,
 				3405BF182BCACF7000CE302F /* MLAnalysisView.swift in Sources */,

@@ -9,5 +9,6 @@ enum AppLogger {
     static let ui = Logger(subsystem: subsystem, category: "ui")
     static let permissions = Logger(subsystem: subsystem, category: "permissions")
     static let error = Logger(subsystem: subsystem, category: "error")
+    static let navigation = Logger(subsystem: subsystem, category: "navigation")
 }
 
